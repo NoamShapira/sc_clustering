@@ -37,13 +37,7 @@ def get_experiments_in_one_anndata(experiments_data_dir: Path, meta_data_path: P
     # Read all plates into anndata and merge them
     col_names = metadata.columns
     adatas = process_map(partial(get_single_batch, col_names=col_names, experiments_data_dir=experiments_data_dir),
-                        list(metadata.iterrows()), max_workers=10)
-    # adatas = []
-    # for index, row in metadata.iterrows():
-    #     cur_data = get_single_batch(col_names, experiments_data_dir, row)
-    #     adatas.append(cur_data)
-    #     print(f"Reading , batch id - {row[meta_data_columns_names.BATCH_ID]}, "
-    #           f"batch number - {index}, batch size - {metadata.shape[0]}")
+                         list(metadata.iterrows()), max_workers=10)
 
     adata = ad.concat(adatas, merge="same")
     adata.X = csr_matrix(adata.X)
