@@ -1,8 +1,12 @@
 import os
 from pathlib import Path
+from typing import Tuple
+
+import anndata
 
 import config
 import utils
+from clustering.scanpy_cluster import pre_procces_adata
 from data.data_loading import get_all_experiments_in_one_anndata
 
 
@@ -13,9 +17,13 @@ def create_experiment_dir_and_return_path(experiment_name, main_results_dir: Pat
     return exp_results_dir_path
 
 
-if __name__ == '__main__':
+def load_data_and_save_to_results_dir() -> Tuple[anndata.AnnData, Path]:
     experiment_results_dir_path = create_experiment_dir_and_return_path("simple_clustering")
-
     adata = get_all_experiments_in_one_anndata()
-    # create_clusters(adata, experiment_results_dir_path)
-    adata.write(experiment_results_dir_path)
+    adata.write(Path(experiment_results_dir_path, "loaded_data.h5ad"))
+    return adata, experiment_results_dir_path
+
+
+if __name__ == '__main__':
+    adata, experiment_results_dir_path = load_data_and_save_to_results_dir()
+    pre_procces_adata(adata)
