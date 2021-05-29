@@ -8,7 +8,7 @@ META_DATA_PATH = PurePosixPath('/home/labs/amit/weiner/Serono/Serono11/serono11_
 RESULTS_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_results')
 
 # pre_proccising
-PP_MIN_NUMBER_OF_CELLS_PER_GENE = 3
+PP_MIN_NUMBER_OF_CELLS_PER_GENE = 5
 PP_MIN_NUMBER_OF_GENES_PER_CELL = 200
 PP_MAX_NUMBER_OF_GENES_PER_CELL = 7000
 PP_MAX_NUMBER_OF_MT_GENES_PER_CELL = 15
