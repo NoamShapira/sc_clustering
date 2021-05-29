@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import anndata as ad
@@ -7,7 +8,7 @@ import config
 
 
 def pre_procces_adata(adata: ad.AnnData):
-    # drop bad cells
+    logging.info("drop bad cells")
     adata.var_names_make_unique()
     sc.pp.filter_cells(adata, min_genes=config.PP_MIN_NUMBER_OF_GENES_PER_CELL)
     sc.pp.filter_genes(adata, min_cells=config.PP_MIN_NUMBER_OF_CELLS_PER_GENE)
