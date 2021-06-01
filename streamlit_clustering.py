@@ -76,6 +76,6 @@ scanpy_cluster.compute_neighborhood_graph(adata, neighborhood_graph_n_neighbors=
 st.write(sc.pl.umap(adata, show=False, return_fig=True))
 
 st.subheader("cluster")
-res = st.number_input("clustering resolution - ", value=config.TL_LEIDEN_RESOLUTION)
+res = st.number_input("clustering resolution", value=config.TL_LEIDEN_RESOLUTION)
 scanpy_cluster.cluster_adata(adata, method="leiden", resolution=res)
 st.write(sc.pl.umap(adata, show=False, return_fig=True, color=['leiden']))

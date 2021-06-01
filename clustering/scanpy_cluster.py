@@ -26,20 +26,6 @@ def cluster_adata(adata: ad.AnnData, method: str = "leiden", resolution=config.T
         raise NotImplementedError
 
 
-def pre_procces_adata(adata: ad.AnnData):
-    pp_rename_vars_add_mt_metrics(adata)
-
-    adata = pp_drop_genes_and_cells(adata)
-
-    normelize_data(adata)
-
-    compute_variable_genes(adata)
-
-    adata = choose_variable_genes(adata)
-
-    regress_out_and_scale(adata)
-
-
 def regress_out_and_scale(adata):
     # Regress out effects of total counts per cell and the percentage of mitochondrial genes expressed.
     # Scale the data to unit variance
@@ -47,7 +33,7 @@ def regress_out_and_scale(adata):
     sc.pp.scale(adata, max_value=config.PP_SCALE_MAX_VALUE)
 
 
-def choose_variable_genes(adata):
+def choose_variable_genes(adata) -> ad.AnnData:
     logging.info("save procced data in adata.raw")
     adata.raw = adata
     # choose only viriable genes
@@ -83,6 +69,20 @@ def pp_rename_vars_add_mt_metrics(adata):
     adata.var_names_make_unique()
     adata.var['mt'] = adata.var_names.str.startswith('mt-')  # annotate the group of mitochondrial genes as 'mt'
     sc.pp.calculate_qc_metrics(adata=adata, **config.PP_QUALITY_CONTROL_PARAMS)
+
+
+def pre_procces_adata(adata: ad.AnnData):
+    pp_rename_vars_add_mt_metrics(adata)
+
+    adata = pp_drop_genes_and_cells(adata)
+
+    normelize_data(adata)
+
+    compute_variable_genes(adata)
+
+    adata = choose_variable_genes(adata)
+
+    regress_out_and_scale(adata)
 
 
 def create_clusters(adata: ad.AnnData, results_path_dir: Path):
