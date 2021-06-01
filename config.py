@@ -7,6 +7,9 @@ META_DATA_PATH = PurePosixPath('/home/labs/amit/weiner/Serono/Serono11/serono11_
 # personal paths
 RESULTS_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_results')
 
+# env consts
+IO_N_WORKERS = 32
+
 # pre_proccising
 PP_MIN_NUMBER_OF_CELLS_PER_GENE = 20
 PP_MIN_NUMBER_OF_GENES_PER_CELL = 200
@@ -22,8 +25,8 @@ PP_SCALE_MAX_VALUE = 10
 TL_PCA_SVD_SOLVER = 'arpack'
 TL_PCA_N_COMPS = 100
 
-NEIGHBORHOOD_GRAPH_N_PCS = None
-NEIGHBORHOOD_GRAPH_N_NEIBORS = 10
+NEIGHBORHOOD_GRAPH_N_PCS = 100
+NEIGHBORHOOD_GRAPH_N_NEIGHBORS = 10
 
 TL_LOUVAIN_RESOLUTION = 1.0
 TL_LEIDEN_RESOLUTION = 1.0

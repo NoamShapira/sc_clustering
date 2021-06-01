@@ -7,7 +7,7 @@ import anndata as ad
 import pandas as pd
 import scanpy as sc
 from scipy.sparse import csr_matrix
-from tqdm.contrib.concurrent import thread_map, process_map
+from tqdm.contrib.concurrent import process_map
 
 import config
 from data import meta_data_columns_names
@@ -37,7 +37,7 @@ def get_experiments_in_one_anndata(experiments_data_dir: Path, meta_data_path: P
     # Read all plates into anndata and merge them
     col_names = metadata.columns
     adatas = process_map(partial(get_single_batch, col_names=col_names, experiments_data_dir=experiments_data_dir),
-                         list(metadata.iterrows()), max_workers=10, desc="loading relevant batches", unit="batch")
+                         list(metadata.iterrows()), max_workers=config.IO_N_WORKERS, desc="loading relevant batches", unit="batch")
     print("merging to single adata")
     adata = ad.concat(adatas, merge="same")
     print(f"converting adata to sparse matrix")
