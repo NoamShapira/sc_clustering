@@ -70,7 +70,7 @@ st.write(sc.pl.pca(adata, show=False, return_fig=True))
 
 st.subheader("build a graph")
 n_neighbors = st.number_input("neighborhood graph n neighbors", value=config.NEIGHBORHOOD_GRAPH_N_NEIGHBORS)
-n_pcs = st.number_input("neighborhood graph n neighbors", value=config.NEIGHBORHOOD_GRAPH_N_PCS)
+n_pcs = st.number_input("neighborhood graph n pcs", value=config.NEIGHBORHOOD_GRAPH_N_PCS)
 scanpy_cluster.compute_neighborhood_graph(adata, neighborhood_graph_n_neighbors=n_neighbors,
                                           neighborhood_graph_n_pcs=n_pcs)
 st.write(sc.pl.umap(adata, show=False, return_fig=True))
