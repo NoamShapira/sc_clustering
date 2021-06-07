@@ -82,6 +82,15 @@ def compute_pca(adata):
     return new_adata
 
 
+@st.cache(allow_output_mutation=True, suppress_st_warning=True)
+def compute_neighborhood_graph_cache(adata, n_neighbors, n_pcs):
+    st.write("compute_neighborhood_graph_cache cache missed - calculating")
+    copy_adata = adata.copy()
+    scanpy_cluster.compute_neighborhood_graph(copy_adata, neighborhood_graph_n_neighbors=n_neighbors,
+                                              neighborhood_graph_n_pcs=n_pcs)
+    return copy_adata
+
+
 raw_adata, experiment_results_dir_path = load_data()
 
 st.write(f"Load data result dir is {experiment_results_dir_path}")
@@ -105,9 +114,9 @@ st.subheader("normalize and choose genes")
 adata_norm = normalize_and_choose_genes(adata_dropped_genes)
 
 st.subheader("pca")
-adata_3 = compute_pca(adata_norm)
+adata_pca = compute_pca(adata_norm)
 
-adata_4 = load_meta_cell_and_merge_to_adata(adata_3, config.META_CELL_PATH)
+adata_4 = load_meta_cell_and_merge_to_adata(adata_pca, config.META_CELL_PATH)
 
 # st.write(sc.pl.pca(adata_4, show=False, return_fig=True))
 # sc.pl.pca_variance_ratio(adata, log=True)
@@ -115,19 +124,19 @@ adata_4 = load_meta_cell_and_merge_to_adata(adata_3, config.META_CELL_PATH)
 st.subheader("build a graph")
 n_neighbors = st.number_input("neighborhood graph n neighbors", value=config.NEIGHBORHOOD_GRAPH_N_NEIGHBORS)
 n_pcs = st.number_input("neighborhood graph n pcs", value=config.NEIGHBORHOOD_GRAPH_N_PCS)
-scanpy_cluster.compute_neighborhood_graph(adata_4, neighborhood_graph_n_neighbors=n_neighbors,
-                                          neighborhood_graph_n_pcs=n_pcs)
-st.write(sc.pl.umap(adata_4, show=False, return_fig=True))
+
+adata_graph = compute_neighborhood_graph_cache(adata_4, n_neighbors, n_pcs)
+st.write(sc.pl.umap(adata_graph, show=False, return_fig=True))
 
 st.subheader("cluster")
 res = st.number_input("clustering resolution", value=config.TL_LEIDEN_RESOLUTION)
-final_adata = scanpy_cluster.cluster_adata(adata_4, method="leiden", resolution=res)
-st.write(sc.pl.umap(adata_4, show=False, return_fig=True, color=['leiden', "mc"]))
+final_adata = scanpy_cluster.cluster_adata(adata_graph, method="leiden", resolution=res)
+st.write(sc.pl.umap(final_adata, show=False, return_fig=True, color=['leiden', "mc"]))
 
-
+st.subheader("Metrict of similarities between partitions")
 st.write(pd.DataFrame.from_dict({
-    "AMI": metrics.adjusted_mutual_info_score(final_adata.obs["mc"], final_adata.obs["leiden"]),
-    "completness": metrics.completeness_score(final_adata.obs["mc"], final_adata.obs["leiden"])
+    "AMI": [metrics.adjusted_mutual_info_score(final_adata.obs["mc"], final_adata.obs["leiden"])],
+    "completness": [metrics.completeness_score(final_adata.obs["mc"], final_adata.obs["leiden"])]
 }))
 
 if st.button("save final result to file"):

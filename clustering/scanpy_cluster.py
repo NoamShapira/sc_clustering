@@ -20,7 +20,7 @@ def compute_neighborhood_graph(adata: ad.AnnData, neighborhood_graph_n_neighbors
 def cluster_adata(adata: ad.AnnData, method: str = "leiden", resolution=config.TL_LEIDEN_RESOLUTION):
     adata_copy = adata.copy()
     if method == "leiden":
-        sc.tl.leiden(adata, resolution=resolution)
+        sc.tl.leiden(adata_copy, resolution=resolution)
     # if method == "louvain":
     #     sc.tl.louvain(adata, resolution=resolution)
     else:
