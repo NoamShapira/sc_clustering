@@ -37,7 +37,8 @@ def get_experiments_in_one_anndata(experiments_data_dir: Path, meta_data_path: P
     # Read all plates into anndata and merge them
     col_names = metadata.columns
     adatas = process_map(partial(get_single_batch, col_names=col_names, experiments_data_dir=experiments_data_dir),
-                         list(metadata.iterrows()), max_workers=config.IO_N_WORKERS, desc="loading relevant batches", unit="batch")
+                         list(metadata.iterrows()), max_workers=config.IO_N_WORKERS, desc="loading relevant batches",
+                         unit="batch")
     print("merging to single adata")
     adata = ad.concat(adatas, merge="same")
     print(f"converting adata to sparse matrix")

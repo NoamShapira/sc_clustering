@@ -4,5 +4,6 @@ jupyter_contrib_nbextensions
 leidenalg
 # louvain
 streamlit
+scvi-tools
 # triku
 # ray

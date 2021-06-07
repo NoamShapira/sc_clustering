@@ -6,6 +6,7 @@ META_DATA_PATH = PurePosixPath('/home/labs/amit/weiner/Serono/Serono11/serono11_
 
 # personal paths
 RESULTS_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_results')
+META_CELL_PATH = PurePosixPath('/home/labs/amit/noamsh/mc.csv')
 
 # env consts
 IO_N_WORKERS = 32

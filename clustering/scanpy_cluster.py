@@ -18,12 +18,14 @@ def compute_neighborhood_graph(adata: ad.AnnData, neighborhood_graph_n_neighbors
 
 
 def cluster_adata(adata: ad.AnnData, method: str = "leiden", resolution=config.TL_LEIDEN_RESOLUTION):
+    adata_copy = adata.copy()
     if method == "leiden":
         sc.tl.leiden(adata, resolution=resolution)
     # if method == "louvain":
     #     sc.tl.louvain(adata, resolution=resolution)
     else:
         raise NotImplementedError
+    return adata_copy
 
 
 def regress_out_and_scale(adata):
@@ -71,18 +73,13 @@ def pp_rename_vars_add_mt_metrics(adata):
     sc.pp.calculate_qc_metrics(adata=adata, **config.PP_QUALITY_CONTROL_PARAMS)
 
 
-def pre_procces_adata(adata: ad.AnnData):
-    pp_rename_vars_add_mt_metrics(adata)
-
-    adata = pp_drop_genes_and_cells(adata)
-
-    normelize_data(adata)
-
-    compute_variable_genes(adata)
-
-    adata = choose_variable_genes(adata)
-
-    regress_out_and_scale(adata)
+def normalize_and_choose_genes(adata: ad.AnnData):
+    new_adata = adata.copy()
+    normelize_data(new_adata)
+    compute_variable_genes(new_adata)
+    new_adata = choose_variable_genes(new_adata)
+    regress_out_and_scale(new_adata)
+    return new_adata
 
 
 def create_clusters(adata: ad.AnnData, results_path_dir: Path):
