@@ -1,19 +1,47 @@
+import collections
 import logging
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Callable, Dict
 
 import anndata as an
+import numpy as np
 import pandas as pd
-import streamlit as st
 import scanpy as sc
-from sklearn import metrics
+import streamlit as st
 from matplotlib import pyplot as plt
+from sklearn import metrics
 
 import config
 from clustering import scanpy_cluster
 from clustering.meta_cell import load_meta_cell_and_merge_to_adata
 from data import preprocces
 from streamlit_funcs import load_data_and_save_to_results_dir
+
+
+def compute_metrics(adata: an.AnnData, metric_funcs_dict: Dict[str, Callable] = None,
+                    clustring_method_name: str = "leiden") -> pd.DataFrame:
+    metric_funcs = metric_funcs_dict if metric_funcs_dict is not None else {
+        "AMI": metrics.adjusted_mutual_info_score,
+        "completness": metrics.completeness_score,
+        "ARI": metrics.adjusted_rand_score,
+        "homogeneity": metrics.homogeneity_score
+    }
+    mc_obs = adata.obs["mc"]
+    group_labels = adata.obs["group"]
+    sub_group_labels = adata.obs["sub_group"]
+    clustering_results = adata.obs[clustring_method_name]
+    comperissons = {
+        "y_true-mc__y_pred-clustering": (mc_obs, clustering_results),
+        "y_true-mc__y_pred-group": (mc_obs, group_labels),
+        "y_true-clustering__y_pred-group": (clustering_results, group_labels)
+    }
+    data = collections.defaultdict(list)
+    ind = []
+    for comperissons_name, (y_true, y_pred) in comperissons.items():
+        ind.append(comperissons_name)
+        for metric_name, metric_func in metric_funcs.items():
+            data[metric_name].append(metric_func(y_true, y_pred))
+    return pd.DataFrame(data=dict(data), index=ind)
 
 
 def scatter_n_genes_and_n_mt_genes_per_cell(adata, ax_1, ax_2):
@@ -116,8 +144,6 @@ adata_norm = normalize_and_choose_genes(adata_dropped_genes)
 st.subheader("pca")
 adata_pca = compute_pca(adata_norm)
 
-adata_4 = load_meta_cell_and_merge_to_adata(adata_pca, config.META_CELL_PATH)
-
 # st.write(sc.pl.pca(adata_4, show=False, return_fig=True))
 # sc.pl.pca_variance_ratio(adata, log=True)
 
@@ -125,19 +151,17 @@ st.subheader("build a graph")
 n_neighbors = st.number_input("neighborhood graph n neighbors", value=config.NEIGHBORHOOD_GRAPH_N_NEIGHBORS)
 n_pcs = st.number_input("neighborhood graph n pcs", value=config.NEIGHBORHOOD_GRAPH_N_PCS)
 
-adata_graph = compute_neighborhood_graph_cache(adata_4, n_neighbors, n_pcs)
+adata_graph = compute_neighborhood_graph_cache(adata_pca, n_neighbors, n_pcs)
 st.write(sc.pl.umap(adata_graph, show=False, return_fig=True))
 
 st.subheader("cluster")
 res = st.number_input("clustering resolution", value=config.TL_LEIDEN_RESOLUTION)
 final_adata = scanpy_cluster.cluster_adata(adata_graph, method="leiden", resolution=res)
-st.write(sc.pl.umap(final_adata, show=False, return_fig=True, color=['leiden', "mc"]))
+final_adata = load_meta_cell_and_merge_to_adata(final_adata, config.META_CELL_PATH)
+st.write(sc.pl.umap(final_adata, ncols=2, show=False, return_fig=True, color=['leiden', "mc", "group", "sub_group"]))
 
 st.subheader("Metrict of similarities between partitions")
-st.write(pd.DataFrame.from_dict({
-    "AMI": [metrics.adjusted_mutual_info_score(final_adata.obs["mc"], final_adata.obs["leiden"])],
-    "completness": [metrics.completeness_score(final_adata.obs["mc"], final_adata.obs["leiden"])]
-}))
+st.write(compute_metrics(final_adata))
 
 if st.button("save final result to file"):
     final_adata.write(Path(experiment_results_dir_path, "final_adata.h5ad"))
