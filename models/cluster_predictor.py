@@ -40,7 +40,7 @@ class OnlineClustering:
         obs_name_to_predictions = [item for sublist in obs_name_to_predictions for item in sublist]
         series_of_predictions = pd.Series([x[1] for x in obs_name_to_predictions],
                                           index=[x[0] for x in obs_name_to_predictions])
-        adata_to_pred[predictions_col] = series_of_predictions
+        adata_to_pred.obs[predictions_col] = series_of_predictions
 
     def assign_to_single_cluster(self, adata_to_pred: ad.AnnData, method: str = "nearest_neighbor_majority_vote") -> \
             List[Tuple[str, Any]]:
