@@ -65,17 +65,21 @@ def plot_raw_data(adata):
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def drop_bad_genes(adata, filter_labs_bad_genes, min_num_cells_per_gene, min_num_genes_per_cell, max_num_genes_per_cell,
-                   max_num_mt_genes_pre_cell):
+                   max_num_mt_genes_pre_cell, min_num_counts_per_cell):
     st.write("drop_bad_genes cache missed - calculating ... ")
     adata = adata.copy()
     n_genes_source = len(adata.var_names)
+    n_cells_source = len(adata.obs_names)
     adata = scanpy_cluster.pp_drop_genes_and_cells(adata,
                                                    min_num_genes_per_cell=min_num_genes_per_cell,
                                                    min_num_cells_per_gene=min_num_cells_per_gene,
                                                    max_num_genes_per_cell=max_num_genes_per_cell,
-                                                   max_num_mt_genes_pre_cell=max_num_mt_genes_pre_cell)
+                                                   max_num_mt_genes_pre_cell=max_num_mt_genes_pre_cell,
+                                                   min_num_counts_per_cell=min_num_counts_per_cell)
     n_genes_after_scanpy = len(adata.var_names)
+    n_cells_after_scanpy = len(adata.obs_names)
     logging.info(f"scanpy dropped : {n_genes_source - n_genes_after_scanpy} genes, from {n_genes_source}")
+    logging.info(f"scanpy dropped : {n_cells_source - n_cells_after_scanpy} cells, from {n_cells_source}")
     fig, (ax1, ax2) = plt.subplots(1, 2)
     scatter_n_genes_and_n_mt_genes_per_cell(adata, ax1, ax2)
     st.write(fig)
@@ -88,9 +92,9 @@ def drop_bad_genes(adata, filter_labs_bad_genes, min_num_cells_per_gene, min_num
 
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
-def normalize_and_choose_genes(adata):
+def normalize_and_choose_genes(adata, drop_unvariable_genes):
     st.write("normalize_and_choose_genes cache missed - calculating ... ")
-    return scanpy_cluster.normalize_and_choose_genes(adata)
+    return scanpy_cluster.normalize_and_choose_genes(adata, drop_unvariable_genes)
     # scanpy_cluster.normelize_data(adata)  # can add arg - normelized_reads_per_cell
     # scanpy_cluster.compute_variable_genes(adata)  # can add args - "min_mean": 0.0125,"max_mean": 3,"min_disp": 0.5
     # # fig = plt.Figure()
@@ -140,16 +144,18 @@ st.subheader("drop bad genes and cells")
 min_num_cells_per_gene = st.number_input("min number of cells per gene", value=config.PP_MIN_NUMBER_OF_CELLS_PER_GENE)
 min_num_genes_per_cell = st.number_input("min number of genes per cell", value=config.PP_MIN_NUMBER_OF_GENES_PER_CELL)
 max_num_genes_per_cell = st.number_input("max number of genes per cell", value=config.PP_MAX_NUMBER_OF_GENES_PER_CELL)
+min_num_counts_per_cell = st.number_input("min number of counts per cell", value=config.PP_MIN_NUMBER_OF_GENES_PER_CELL)
 
-max_num_mt_genes_pre_cell = st.number_input("max number of mt genes per cell",
-                                            value=config.PP_MAX_NUMBER_OF_MT_GENES_PER_CELL)
+max_num_mt_genes_pre_cell = st.number_input("max percentage of mt genes per cell",
+                                            value=config.PP_MAX_PCT_OF_MT_GENES_PER_CELL)
 
 filter_lab_genes = st.checkbox("Filter bad genes from labs black list")
 adata_dropped_genes = drop_bad_genes(raw_adata, filter_lab_genes, min_num_cells_per_gene, min_num_genes_per_cell,
-                                     max_num_genes_per_cell, max_num_mt_genes_pre_cell)
+                                     max_num_genes_per_cell, max_num_mt_genes_pre_cell, min_num_counts_per_cell)
 
 st.subheader("normalize and choose genes")
-adata_norm = normalize_and_choose_genes(adata_dropped_genes)
+drop_unvariable_genes = st.checkbox("choose variable genes", value=True)
+adata_norm = normalize_and_choose_genes(adata_dropped_genes, drop_unvariable_genes)
 
 st.subheader("pca")
 adata_pca = compute_pca(adata_norm)

@@ -58,12 +58,15 @@ def pp_drop_genes_and_cells(adata,
                             min_num_genes_per_cell=config.PP_MIN_NUMBER_OF_GENES_PER_CELL,
                             min_num_cells_per_gene=config.PP_MIN_NUMBER_OF_CELLS_PER_GENE,
                             max_num_genes_per_cell=config.PP_MAX_NUMBER_OF_GENES_PER_CELL,
-                            max_num_mt_genes_pre_cell=config.PP_MAX_NUMBER_OF_MT_GENES_PER_CELL):
+                            max_num_mt_genes_pre_cell=config.PP_MAX_PCT_OF_MT_GENES_PER_CELL,
+                            min_num_counts_per_cell=config.PP_MIN_NUMBER_OF_GENES_PER_CELL):
     logging.info("drop bad cells")
     sc.pp.filter_cells(adata, min_genes=min_num_genes_per_cell)
     sc.pp.filter_cells(adata, max_genes=max_num_genes_per_cell)
-    sc.pp.filter_genes(adata, min_cells=min_num_cells_per_gene)
+    sc.pp.filter_cells(adata, min_counts=min_num_counts_per_cell)
     adata = adata[adata.obs.pct_counts_mt < max_num_mt_genes_pre_cell, :]
+    logging.info("drop bad genes")
+    sc.pp.filter_genes(adata, min_cells=min_num_cells_per_gene)
     return adata
 
 
@@ -73,11 +76,12 @@ def pp_rename_vars_add_mt_metrics(adata):
     sc.pp.calculate_qc_metrics(adata=adata, **config.PP_QUALITY_CONTROL_PARAMS)
 
 
-def normalize_and_choose_genes(adata: ad.AnnData):
+def normalize_and_choose_genes(adata: ad.AnnData, drop_unvariable_genes: bool = True):
     new_adata = adata.copy()
     normelize_data(new_adata)
-    compute_variable_genes(new_adata)
-    new_adata = choose_variable_genes(new_adata)
+    if drop_unvariable_genes:
+        compute_variable_genes(new_adata)
+        new_adata = choose_variable_genes(new_adata)
     regress_out_and_scale(new_adata)
     return new_adata
 
