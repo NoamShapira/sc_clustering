@@ -119,6 +119,16 @@ def compute_neighborhood_graph_cache(adata, n_neighbors, n_pcs):
     return copy_adata
 
 
+@st.cache(allow_output_mutation=True, suppress_st_warning=True)
+def computer_clusters_cache_and_load_reference(adata, clustering_method, resolution,
+                                               reference_path=None, reference_col_name="mc"):
+    st.write("computer_clusters_cache cache missed - calculating")
+    new_adata = scanpy_cluster.cluster_adata(adata, method=clustering_method, resolution=resolution)
+    if reference_path is not None:
+        new_adata = load_meta_cell_and_merge_to_adata(new_adata, reference_path, reference_col_name=reference_col_name)
+    return new_adata
+
+
 raw_adata, experiment_results_dir_path = load_data()
 
 st.write(f"Load data result dir is {experiment_results_dir_path}")
@@ -156,9 +166,25 @@ st.write(sc.pl.umap(adata_graph, show=False, return_fig=True))
 
 st.subheader("cluster")
 res = st.number_input("clustering resolution", value=config.TL_LEIDEN_RESOLUTION)
-final_adata = scanpy_cluster.cluster_adata(adata_graph, method="leiden", resolution=res)
-final_adata = load_meta_cell_and_merge_to_adata(final_adata, config.META_CELL_PATH)
-st.write(sc.pl.umap(final_adata, ncols=2, show=False, return_fig=True, color=['leiden', "mc", "group", "sub_group"]))
+clustering_method_name = st.selectbox("Select clustering method", ["leiden"])
+
+reference_col_name = "mc"
+final_adata = computer_clusters_cache_and_load_reference(adata_graph, clustering_method=clustering_method_name,
+                                                         resolution=res, reference_path=config.META_CELL_PATH,
+                                                         reference_col_name=reference_col_name)
+st.write(sc.pl.umap(final_adata, ncols=2, show=False, return_fig=True,
+                    color=[reference_col_name, clustering_method_name, "group", "sub_group"]))
+
+
+partition_to_visualize = st.selectbox("choose a partirion of the data to visialize by", [clustering_method_name, reference_col_name, "sub_group"])
+chosen_name = st.selectbox(f"select {partition_to_visualize} to show in graph",
+                            sorted(final_adata.obs[partition_to_visualize].unique()))
+final_adata.obs[f"is_not_chosen_{partition_to_visualize}"] = \
+    final_adata.obs[partition_to_visualize].apply(lambda x: x != chosen_name).astype('category')
+st.write(sc.pl.umap(final_adata, ncols=1, show=False, return_fig=True,
+                    color=f"is_not_chosen_{partition_to_visualize}",
+                    palette="Set1"))
+
 
 st.subheader("Metrict of similarities between partitions")
 st.write(compute_metrics(final_adata))
