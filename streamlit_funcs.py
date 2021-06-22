@@ -119,7 +119,7 @@ def compute_metrics(adata: an.AnnData, metric_funcs_dict: Dict[str, Callable] = 
         "ARI": metrics.adjusted_rand_score,
         "homogeneity": metrics.homogeneity_score
     }
-    mc_obs = adata.obs["mc"]
+    mc_obs = adata.obs["mc.mc"]
     group_labels = adata.obs["group"]
     sub_group_labels = adata.obs["sub_group"]
     clustering_results = adata.obs[clustring_method_name]

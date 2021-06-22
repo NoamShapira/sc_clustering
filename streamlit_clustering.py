@@ -51,7 +51,7 @@ clustering_method_name = st.selectbox("Select clustering method", ["leiden"])
 reference_col_names = ["mc.mc", "group", "sub_group"]
 final_adata = computer_clusters_cache_and_load_reference(adata_graph, clustering_method=clustering_method_name,
                                                          resolution=res, reference_path=config.META_CELL_PATH,
-                                                         reference_col_name=reference_col_names)
+                                                         reference_col_names=reference_col_names)
 st.write(sc.pl.umap(final_adata, ncols=2, show=False, return_fig=True,
                     color=[clustering_method_name] + reference_col_names))
 
