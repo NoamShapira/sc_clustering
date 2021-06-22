@@ -16,6 +16,7 @@ from clustering import scanpy_cluster
 from clustering.meta_cell import load_meta_cell_and_merge_to_adata
 from data import preprocces
 from streamlit_funcs import load_data_and_save_to_results_dir
+from utils import get_now_timestemp_as_string
 
 
 def compute_metrics(adata: an.AnnData, metric_funcs_dict: Dict[str, Callable] = None,
@@ -92,18 +93,9 @@ def drop_bad_genes(adata, filter_labs_bad_genes, min_num_cells_per_gene, min_num
 
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
-def normalize_and_choose_genes(adata, drop_unvariable_genes):
+def normalize_and_choose_genes(adata, drop_unvariable_genes, regress_out_total_cont_and_mt):
     st.write("normalize_and_choose_genes cache missed - calculating ... ")
-    return scanpy_cluster.normalize_and_choose_genes(adata, drop_unvariable_genes)
-    # scanpy_cluster.normelize_data(adata)  # can add arg - normelized_reads_per_cell
-    # scanpy_cluster.compute_variable_genes(adata)  # can add args - "min_mean": 0.0125,"max_mean": 3,"min_disp": 0.5
-    # # fig = plt.Figure()
-    # # fig.add_axes(sc.pl.highly_variable_genes(adata, show=False))
-    # # st.write(fig)
-    #
-    # adata = scanpy_cluster.choose_variable_genes(adata)
-    # scanpy_cluster.regress_out_and_scale(adata)
-    # return adata.copy()
+    return scanpy_cluster.normalize_and_choose_genes(adata, drop_unvariable_genes, regress_out_total_cont_and_mt)
 
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
@@ -155,7 +147,8 @@ adata_dropped_genes = drop_bad_genes(raw_adata, filter_lab_genes, min_num_cells_
 
 st.subheader("normalize and choose genes")
 drop_unvariable_genes = st.checkbox("choose variable genes", value=True)
-adata_norm = normalize_and_choose_genes(adata_dropped_genes, drop_unvariable_genes)
+regress_out_total_cont_and_mt = st.checkbox("regress out total gene count and mitochondrial genes", value=True)
+adata_norm = normalize_and_choose_genes(adata_dropped_genes, drop_unvariable_genes, regress_out_total_cont_and_mt)
 
 st.subheader("pca")
 adata_pca = compute_pca(adata_norm)
@@ -182,7 +175,7 @@ st.write(sc.pl.umap(final_adata, ncols=2, show=False, return_fig=True,
                     color=[reference_col_name, clustering_method_name, "group", "sub_group"]))
 
 
-partition_to_visualize = st.selectbox("choose a partirion of the data to visialize by", [clustering_method_name, reference_col_name, "sub_group"])
+partition_to_visualize = st.selectbox("choose a partirion of the data to visialize by", [clustering_method_name, reference_col_name, "sub_group", "group"])
 chosen_name = st.selectbox(f"select {partition_to_visualize} to show in graph",
                             sorted(final_adata.obs[partition_to_visualize].unique()))
 final_adata.obs[f"is_not_chosen_{partition_to_visualize}"] = \
@@ -196,4 +189,4 @@ st.subheader("Metrict of similarities between partitions")
 st.write(compute_metrics(final_adata))
 
 if st.button("save final result to file"):
-    final_adata.write(Path(experiment_results_dir_path, "final_adata.h5ad"))
+    final_adata.write(Path(experiment_results_dir_path, f"final_adata_{get_now_timestemp_as_string()}.h5ad"))

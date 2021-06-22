@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-
 import anndata as ad
 import scanpy as sc
 
@@ -26,13 +25,6 @@ def cluster_adata(adata: ad.AnnData, method: str = "leiden", resolution=config.T
     else:
         raise NotImplementedError
     return adata_copy
-
-
-def regress_out_and_scale(adata):
-    # Regress out effects of total counts per cell and the percentage of mitochondrial genes expressed.
-    # Scale the data to unit variance
-    sc.pp.regress_out(adata, config.PP_REGRESS_OUT_OBS_KEYS)
-    sc.pp.scale(adata, max_value=config.PP_SCALE_MAX_VALUE)
 
 
 def choose_variable_genes(adata) -> ad.AnnData:
@@ -76,13 +68,16 @@ def pp_rename_vars_add_mt_metrics(adata):
     sc.pp.calculate_qc_metrics(adata=adata, **config.PP_QUALITY_CONTROL_PARAMS)
 
 
-def normalize_and_choose_genes(adata: ad.AnnData, drop_unvariable_genes: bool = True):
+def normalize_and_choose_genes(adata: ad.AnnData, drop_unvariable_genes: bool = True,
+                               regress_out_total_cont_and_mt: bool = True):
     new_adata = adata.copy()
     normelize_data(new_adata)
     if drop_unvariable_genes:
         compute_variable_genes(new_adata)
         new_adata = choose_variable_genes(new_adata)
-    regress_out_and_scale(new_adata)
+    if regress_out_total_cont_and_mt:
+        sc.pp.regress_out(new_adata, config.PP_REGRESS_OUT_OBS_KEYS)
+    sc.pp.scale(new_adata, max_value=config.PP_SCALE_MAX_VALUE)
     return new_adata
 
 
