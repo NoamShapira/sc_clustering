@@ -1,0 +1,4 @@
+docker run -it --rm nvcr.io/nvidia/pytorch:21.05-py3
+
+
+bsub -q gpu-long -app nvidia-gpu-interactive -env LSB_CONTAINER_IMAGE=nvcr.io/nvidia/pytorch:21.04-py3 -R rusage[mem=8092] -R affinity[thread*8] -gpu num=1:j_exclusive=yes -Is /bin/bash

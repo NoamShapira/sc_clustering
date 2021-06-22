@@ -1,5 +1,5 @@
 import logging
-from pathlib import Path
+
 import anndata as ad
 import scanpy as sc
 
@@ -17,20 +17,17 @@ def compute_neighborhood_graph(adata: ad.AnnData, neighborhood_graph_n_neighbors
 
 
 def cluster_adata(adata: ad.AnnData, method: str = "leiden", resolution=config.TL_LEIDEN_RESOLUTION):
-    adata_copy = adata.copy()
     if method == "leiden":
-        sc.tl.leiden(adata_copy, resolution=resolution)
+        sc.tl.leiden(adata, resolution=resolution)
     # if method == "louvain":
     #     sc.tl.louvain(adata, resolution=resolution)
     else:
         raise NotImplementedError
-    return adata_copy
 
 
 def choose_variable_genes(adata) -> ad.AnnData:
     logging.info("save procced data in adata.raw")
     adata.raw = adata
-    # choose only viriable genes
     adata = adata[:, adata.var.highly_variable]
     return adata
 
@@ -79,11 +76,3 @@ def normalize_and_choose_genes(adata: ad.AnnData, drop_unvariable_genes: bool = 
         sc.pp.regress_out(new_adata, config.PP_REGRESS_OUT_OBS_KEYS)
     sc.pp.scale(new_adata, max_value=config.PP_SCALE_MAX_VALUE)
     return new_adata
-
-
-def create_clusters(adata: ad.AnnData, results_path_dir: Path):
-    transform_pca_adata(adata)
-    compute_neighborhood_graph(adata)
-    cluster_adata(adata)
-
-    adata.write(Path(results_path_dir, "clustered_data.h5ad"))
