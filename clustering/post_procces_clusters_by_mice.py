@@ -35,7 +35,6 @@ def get_last_result_from_experiment(experiment_name: str) -> ad.AnnData:
 def get_mouse_ingest_evaluation(experiment_name: str = "last", clustering_method: str = "leiden") \
         -> Tuple[dict, dict, dict]:
     clustered_adata = get_last_result_from_experiment(experiment_name=experiment_name)
-    clustered_adata.obsp["distances"] = clustered_adata.obsp["distances"].todense()
 
     mouse_col_name = "mouse"
     clustered_adata.obs[mouse_col_name] = clustered_adata.obs[ARM_DAY_BATCHMOUSE].apply(lambda x: x.split(".")[-1])
