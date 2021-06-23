@@ -57,11 +57,12 @@ st.write(sc.pl.umap(final_adata, ncols=2, show=False, return_fig=True,
 
 partition_to_visualize = st.selectbox("choose a partirion of the data to visialize by",
                                       [clustering_method_name] + reference_col_names)
+final_adata_for_visualization = final_adata.copy()
 chosen_name = st.selectbox(f"select {partition_to_visualize} to show in graph",
-                           sorted(final_adata.obs[partition_to_visualize].unique()))
-final_adata.obs[f"is_not_chosen_{partition_to_visualize}"] = \
-    final_adata.obs[partition_to_visualize].apply(lambda x: x != chosen_name).astype('category')
-st.write(sc.pl.umap(final_adata, ncols=1, show=False, return_fig=True,
+                           sorted(final_adata_for_visualization.obs[partition_to_visualize].unique()))
+final_adata_for_visualization.obs[f"is_not_chosen_{partition_to_visualize}"] = \
+    final_adata_for_visualization.obs[partition_to_visualize].apply(lambda x: x != chosen_name).astype('category')
+st.write(sc.pl.umap(final_adata_for_visualization, ncols=1, show=False, return_fig=True,
                     color=f"is_not_chosen_{partition_to_visualize}",
                     palette="Set1"))
 

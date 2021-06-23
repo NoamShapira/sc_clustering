@@ -6,9 +6,12 @@ import pytz
 
 import config
 
+TIME_PATTERN = "%Y_%m_%d__%H_%M_%S"
+TIME_PATTERN_LEN = 20
+
 
 def get_now_timestemp_as_string() -> str:
-    return datetime.now(tz=pytz.timezone("Israel")).strftime("%Y_%m_%d__%H_%M_%S")
+    return datetime.now(tz=pytz.timezone("Israel")).strftime(TIME_PATTERN)
 
 
 def create_experiment_dir_and_return_path(experiment_name, main_results_dir: Path = config.RESULTS_DIR) -> Path:
