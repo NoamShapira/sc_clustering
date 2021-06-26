@@ -77,7 +77,9 @@ def drop_bad_genes(adata, filter_labs_bad_genes, min_num_cells_per_gene, min_num
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def normalize_and_choose_genes(adata, drop_unvariable_genes, regress_out_total_cont_and_mt):
     st.write("normalize_and_choose_genes cache missed - calculating ... ")
-    return scanpy_cluster.normalize_and_choose_genes(adata, drop_unvariable_genes, regress_out_total_cont_and_mt)
+    new_adata = adata.copy()
+    scanpy_cluster.normalize_and_choose_genes(new_adata, drop_unvariable_genes, regress_out_total_cont_and_mt)
+    return new_adata
 
 
 # data modeling

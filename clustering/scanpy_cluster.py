@@ -65,14 +65,28 @@ def pp_rename_vars_add_mt_metrics(adata):
     sc.pp.calculate_qc_metrics(adata=adata, **config.PP_QUALITY_CONTROL_PARAMS)
 
 
-def normalize_and_choose_genes(adata: ad.AnnData, drop_unvariable_genes: bool = True,
-                               regress_out_total_cont_and_mt: bool = True):
-    new_adata = adata.copy()
-    normelize_data(new_adata)
+def normalize_and_choose_genes(adata: ad.AnnData, drop_unvariable_genes: bool = config.PP_DROP_UNVARIABLE_GENES,
+                               regress_out_total_cont_and_mt: bool = config.PP_REGRESS_OUT_TOTAL_CONT_AND_MT):
+    normelize_data(adata)
     if drop_unvariable_genes:
-        compute_variable_genes(new_adata)
-        new_adata = choose_variable_genes(new_adata)
+        compute_variable_genes(adata)
+        new_adata = choose_variable_genes(adata)
     if regress_out_total_cont_and_mt:
-        sc.pp.regress_out(new_adata, config.PP_REGRESS_OUT_OBS_KEYS)
+        sc.pp.regress_out(adata, config.PP_REGRESS_OUT_OBS_KEYS)
     sc.pp.scale(new_adata, max_value=config.PP_SCALE_MAX_VALUE)
-    return new_adata
+
+
+def run_full_pipe_from_config(adata: ad.AnnData):
+    adata = pp_choose_genes_and_normelize(adata)
+    transform_pca_adata(adata)
+    compute_neighborhood_graph(adata)
+    cluster_adata(adata)
+    return adata
+
+
+def pp_choose_genes_and_normelize(adata):
+    pp_rename_vars_add_mt_metrics(adata)
+    adata = pp_drop_genes_and_cells(adata)
+    normalize_and_choose_genes(adata)
+    return adata
+
