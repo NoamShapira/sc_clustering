@@ -7,6 +7,7 @@ from os import listdir
 from pathlib import Path
 from typing import Tuple
 
+import plotly.graph_objects as go
 import anndata as ad
 import numpy as np
 import scanpy as sc
@@ -117,6 +118,34 @@ def evaluate_ingest_for_mouse(mouse, adata, clustered_adata, clustering_method, 
     mouse_cells_in_clustered = [ind for ind in adata[mouse_ind, :].obs_names if ind in clustered_adata.obs_names]
     original_clusters = clustered_adata[mouse_cells_in_clustered, :].obs[clustering_method]
     return mouse, ingested_clusters, original_clusters
+
+
+def create_sankey_graph_for_clustering(original_clusters, ingested_clusters):
+    unique_orig_clusters = list(np.unique(original_clusters))
+    unique_ingest_clusters = list(np.unique(ingested_clusters))
+
+    links = {"source": [], "target": [], "value": []}
+    num_original_clusters = len(unique_orig_clusters)
+    for i, orig_cluster in enumerate(unique_orig_clusters):
+        for j, ingest_cluster in enumerate(unique_ingest_clusters):
+            orig_cells = set(original_clusters[original_clusters == orig_cluster].index)
+            ingest_cells = set(ingested_clusters[ingested_clusters == ingest_cluster].index)
+            intersecting_cells = orig_cells.intersection(ingest_cells)
+            if len(intersecting_cells) > 0:
+                links["source"].append(i)
+                links["target"].append(j + num_original_clusters)
+                links["value"].append(len(intersecting_cells))
+
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=10,
+            line=dict(color="black", width=0.5),
+            label=unique_orig_clusters + unique_ingest_clusters,
+            color="blue"
+        ),
+        link=links)])
+    return fig
 
 
 if __name__ == '__main__':
