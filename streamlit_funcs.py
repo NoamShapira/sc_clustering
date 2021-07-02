@@ -105,7 +105,7 @@ def computer_clusters_cache_and_load_reference(adata, clustering_method, resolut
                                                reference_path=None, reference_col_names=None):
     st.write("computer_clusters_cache cache missed - calculating")
     new_adata = adata.copy()
-    new_adata = scanpy_cluster.cluster_adata(new_adata, method=clustering_method, resolution=resolution)
+    scanpy_cluster.cluster_adata(new_adata, method=clustering_method, resolution=resolution)
     if reference_path is not None:
         new_adata = load_meta_cell_and_merge_to_adata(new_adata, reference_path,
                                                       reference_col_names=reference_col_names)
