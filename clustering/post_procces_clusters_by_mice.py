@@ -7,6 +7,7 @@ from os import listdir
 from pathlib import Path
 from typing import Tuple
 
+import pandas as pd
 import plotly.graph_objects as go
 import anndata as ad
 import numpy as np
@@ -45,34 +46,6 @@ def get_raw_data_from_experiment(experiment_name: str) -> ad.AnnData:
     return ad.read(Path(config.RESULTS_DIR, experiment_name, "loaded_data.h5ad"))
 
 
-def get_mouse_ingest_evaluation_no_reclustering(experiment_name: str = "last", clustering_method: str = "leiden") \
-        -> Tuple[dict, dict, dict]:
-    clustered_adata = get_last_result_from_experiment(experiment_name=experiment_name)
-
-    mouse_col_name = "mouse"
-    clustered_adata.obs[mouse_col_name] = clustered_adata.obs[ARM_DAY_BATCHMOUSE].apply(lambda x: x.split(".")[-1])
-    all_mice = clustered_adata.obs[mouse_col_name].unique()
-
-    evaluation = {}
-    clusters_counts_original = {}
-    clusters_counts_ingested = {}
-    clusters_counts_original["all_mice"] = np.unique(clustered_adata.obs[clustering_method], return_counts=True)
-
-    for mouse in tqdm(all_mice):
-        mouse_ind = clustered_adata.obs[mouse_col_name].apply(lambda x: x == mouse)
-        ref_adata = clustered_adata[~mouse_ind, :]
-        mouse_adata = clustered_adata[mouse_ind, :]
-
-        original_clusters = mouse_adata.obs[clustering_method]
-        sc.tl.ingest(adata=mouse_adata, adata_ref=ref_adata, obs=clustering_method)
-        ingested_clusters = mouse_adata.obs[clustering_method]
-        evaluation[mouse] = (original_clusters, ingested_clusters)
-        clusters_counts_original[mouse] = np.unique(original_clusters, return_counts=True)
-        clusters_counts_ingested[mouse] = np.unique(ingested_clusters, return_counts=True)
-
-    return evaluation, clusters_counts_original, clusters_counts_ingested
-
-
 def evaluate_mouse_ingest_error(experiment_name: str = "last", clustering_method: str = "leiden",
                                 save_results_as_pickle: bool = False):
     adata = get_raw_data_from_experiment(experiment_name)
@@ -104,23 +77,27 @@ def evaluate_mouse_ingest_error(experiment_name: str = "last", clustering_method
     return evaluation, clusters_counts_original, clusters_counts_ingested
 
 
-def evaluate_ingest_for_mouse(mouse, adata, clustered_adata, clustering_method, mouse_col_name):
+def evaluate_ingest_for_mouse(mouse: str, adata: ad.AnnData, clustered_adata: ad.AnnData, clustering_method: str,
+                              mouse_col_name: str) -> Tuple[str, pd.Series, pd.Series]:
     mouse_ind = adata.obs[mouse_col_name].apply(lambda x: x == mouse)
     ref_adata = adata[~mouse_ind, :]
     mouse_adata = adata[mouse_ind, :]
+
     logging.info(f"clustering ref for mouse {mouse} ...")
     ref_adata = scanpy_cluster.run_full_pipe_from_config(ref_adata, filter_cells_only=False)
     mouse_adata = scanpy_cluster.pp_choose_genes_and_normelize(mouse_adata, filter_cells_only=True)
     mouse_adata = mouse_adata[:, ref_adata.var_names]
+
     logging.info(f"ingesting for mouse {mouse} ...")
     sc.tl.ingest(adata=mouse_adata, adata_ref=ref_adata, obs=clustering_method)
+
     ingested_clusters = mouse_adata.obs[clustering_method]
     mouse_cells_in_clustered = [ind for ind in adata[mouse_ind, :].obs_names if ind in clustered_adata.obs_names]
     original_clusters = clustered_adata[mouse_cells_in_clustered, :].obs[clustering_method]
     return mouse, ingested_clusters, original_clusters
 
 
-def create_sankey_graph_for_clustering(original_clusters, ingested_clusters):
+def create_sankey_graph_for_clustering(original_clusters: pd.Series, ingested_clusters: pd.Series) -> go.Figure:
     unique_orig_clusters = list(np.unique(original_clusters))
     unique_ingest_clusters = list(np.unique(ingested_clusters))
 
