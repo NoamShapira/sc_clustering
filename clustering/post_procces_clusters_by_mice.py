@@ -12,6 +12,8 @@ import plotly.graph_objects as go
 import anndata as ad
 import numpy as np
 import scanpy as sc
+import seaborn as sns
+
 from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
 
@@ -123,6 +125,20 @@ def create_sankey_graph_for_clustering(original_clusters: pd.Series, ingested_cl
         ),
         link=links)])
     return fig
+
+
+def create_heat_confusion_map(original_clustering: pd.Series, new_clustering: pd.Series, show_num_in_heat_map:bool=False):
+    unique_orig_clusters = list(np.unique(original_clustering))
+    unique_new_clusters = list(np.unique(new_clustering))
+
+    confusion_matrix = np.zeros((len(unique_orig_clusters), len(unique_new_clusters)))
+    for i, orig_cluster in enumerate(unique_orig_clusters):
+        for j, new_cluster in enumerate(unique_new_clusters):
+            orig_cells = set(original_clustering[original_clustering == orig_cluster].index)
+            ingest_cells = set(new_clustering[new_clustering == new_cluster].index)
+            confusion_matrix[i, j] = len(orig_cells.intersection(ingest_cells))
+
+    return sns.heatmap(confusion_matrix, anot=show_num_in_heat_map)
 
 
 if __name__ == '__main__':
