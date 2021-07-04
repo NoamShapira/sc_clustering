@@ -43,7 +43,7 @@ def normelize_data(adata, normelized_reads_per_cell=config.PP_NORMELIZED_READS_P
     sc.pp.log1p(adata)
 
 
-def pp_drop_genes_and_cells(adata, filter_cells_only=False,
+def pp_drop_genes_and_cells(adata, filter_cells_only_during_pp=False,
                             min_num_genes_per_cell=config.PP_MIN_NUMBER_OF_GENES_PER_CELL,
                             min_num_cells_per_gene=config.PP_MIN_NUMBER_OF_CELLS_PER_GENE,
                             max_num_genes_per_cell=config.PP_MAX_NUMBER_OF_GENES_PER_CELL,
@@ -54,7 +54,7 @@ def pp_drop_genes_and_cells(adata, filter_cells_only=False,
     sc.pp.filter_cells(adata, max_genes=max_num_genes_per_cell)
     sc.pp.filter_cells(adata, min_counts=min_num_counts_per_cell)
     adata = adata[adata.obs.pct_counts_mt < max_num_mt_genes_pre_cell, :]
-    if not filter_cells_only:
+    if not filter_cells_only_during_pp:
         logging.info("drop bad genes")
         sc.pp.filter_genes(adata, min_cells=min_num_cells_per_gene)
     return adata
@@ -77,17 +77,16 @@ def normalize_and_choose_genes(adata: ad.AnnData, drop_unvariable_genes: bool = 
     sc.pp.scale(adata, max_value=config.PP_SCALE_MAX_VALUE)
 
 
-def run_full_pipe_from_config(adata: ad.AnnData, filter_cells_only):
-    adata = pp_choose_genes_and_normelize(adata, filter_cells_only)
+def run_full_pipe_from_config(adata: ad.AnnData, filter_cells_only_during_pp: bool):
+    adata = pp_choose_genes_and_normelize(adata, filter_cells_only_during_pp)
     transform_pca_adata(adata)
     compute_neighborhood_graph(adata)
     cluster_adata(adata)
     return adata
 
 
-def pp_choose_genes_and_normelize(adata, filter_cells_only: bool = False):
+def pp_choose_genes_and_normelize(adata, filter_cells_only_during_pp: bool = False):
     pp_rename_vars_add_mt_metrics(adata)
-    adata = pp_drop_genes_and_cells(adata, filter_cells_only)
+    adata = pp_drop_genes_and_cells(adata, filter_cells_only_during_pp)
     normalize_and_choose_genes(adata)
     return adata
-
