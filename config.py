@@ -1,8 +1,10 @@
 from pathlib import PurePosixPath
 
 # labs paths
-UMI_PATH = PurePosixPath("/home/labs/amit/eyald/sc_pipeline/scdb_v4_mouse/output/umi.tab/")
-META_DATA_PATH = PurePosixPath('/home/labs/amit/weiner/Serono/Serono11/serono11_metadata.txt')
+UMI_DIR_PATH = PurePosixPath("/home/labs/amit/eyald/sc_pipeline/scdb_v4_mouse/output/umi.tab/")
+ASAF_SERANO_META_DATA_DIR_PATH = PurePosixPath('/home/labs/amit/weiner/Serono/Serono11')
+META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'serono11_metadata.txt')
+NEW_META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'SeronoMetadata13.txt')
 
 # personal paths
 RESULTS_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_results')
@@ -48,3 +50,8 @@ PP_QUALITY_CONTROL_PARAMS = {
     "log1p": False,
     "inplace": True
 }
+
+# run config
+DEBUG_MODE = False
+DEBUG_N_BATCHES = 10
+CLUSTERING_METHOD = "leiden"

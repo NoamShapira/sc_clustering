@@ -57,8 +57,8 @@ def _evaluate_ingest_for_mouse(mouse: str, adata: ad.AnnData, clustered_adata: a
     mouse_adata = adata[mouse_ind, :]
 
     logging.info(f"clustering ref for mouse {mouse} ...")
-    ref_adata = scanpy_cluster.run_full_pipe_from_config(ref_adata, filter_cells_only=False)
-    mouse_adata = scanpy_cluster.pp_choose_genes_and_normelize(mouse_adata, filter_cells_only=True)
+    ref_adata = scanpy_cluster.run_full_pipe_from_config(ref_adata, filter_cells_only_during_pp=False)
+    mouse_adata = scanpy_cluster.pp_choose_genes_and_normelize(mouse_adata, filter_cells_only_during_pp=True)
     mouse_adata = mouse_adata[:, ref_adata.var_names]
 
     logging.info(f"ingesting for mouse {mouse} ...")
@@ -98,10 +98,15 @@ def create_sankey_graph_for_clustering(original_clusters: pd.Series, ingested_cl
     return fig
 
 
-def create_heat_confusion_map(original_clustering: pd.Series, new_clustering: pd.Series, show_num_in_heat_map:bool=False):
+def create_heat_confusion_map(original_clustering: pd.Series, new_clustering: pd.Series):
+    confusion_matrix = compute_confusion_matrix(new_clustering, original_clustering)
+
+    return sns.heatmap(confusion_matrix)
+
+
+def compute_confusion_matrix(new_clustering: pd.Series, original_clustering: pd.Series) -> pd.DataFrame:
     unique_orig_clusters = list(np.unique(original_clustering))
     unique_new_clusters = list(np.unique(new_clustering))
-
     confusion_matrix = np.zeros((len(unique_orig_clusters), len(unique_new_clusters)))
     for i, orig_cluster in enumerate(unique_orig_clusters):
         for j, new_cluster in enumerate(unique_new_clusters):
@@ -109,9 +114,8 @@ def create_heat_confusion_map(original_clustering: pd.Series, new_clustering: pd
             ingest_cells = set(new_clustering[new_clustering == new_cluster].index)
             confusion_matrix[i, j] = len(orig_cells.intersection(ingest_cells))
 
-    return sns.heatmap(confusion_matrix, anot=show_num_in_heat_map)
+    return pd.DataFrame(confusion_matrix, index=unique_orig_clusters, columns=unique_new_clusters)
 
 
 if __name__ == '__main__':
-    evaluation, clusters_counts_original, clusters_counts_ingested = \
-        evaluate_mouse_ingest_error(save_results_as_pickle=True)
+    _, _, _ = evaluate_mouse_ingest_error(save_results_as_pickle=True)

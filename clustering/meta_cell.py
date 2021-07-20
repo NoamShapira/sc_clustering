@@ -4,6 +4,7 @@ from typing import NamedTuple
 import anndata as ad
 import pandas as pd
 
+import config
 from clustering.scanpy_cluster import run_full_pipe_from_config
 from data.data_loading import get_experiments_in_one_anndata
 
@@ -38,12 +39,13 @@ def load_meta_cell_and_merge_to_adata(adata: ad.AnnData, path_to_meta_cell_resul
 
     ind_of_mc_in_adata = [obs_name in adata.obs_names for obs_name in mc_results_prediction.obs_names]
     mc_results_prediction.df = mc_results_prediction.df[ind_of_mc_in_adata]
-    for col_name in list(MetaCellResultsColumnsNames):
+    for col_name in list(MetaCellResultsColumnsNames()):
         combined_adata.obs[col_name] = mc_results_prediction.df[col_name].fillna("NO_GROUP")
     return combined_adata
 
 
-def meta_cell_and_clustering_comparison(experiments_data_dir, meta_data_path, path_to_meta_cell_results) -> ad.AnnData:
+def run_full_pipeline_and_load_meta_cell(experiments_data_dir=config.UMI_DIR_PATH, meta_data_path=config.META_DATA_PATH,
+                                         path_to_meta_cell_results=config.META_CELL_PATH) -> ad.AnnData:
     raw_adata = get_experiments_in_one_anndata(experiments_data_dir, meta_data_path, [])
     clustered_adata = run_full_pipe_from_config(raw_adata.copy(), filter_cells_only_during_pp=False)
     return load_meta_cell_and_merge_to_adata(clustered_adata, path_to_meta_cell_results)

@@ -17,12 +17,12 @@ def drop_treated_batches(df: pd.DataFrame) -> pd.DataFrame:
     raise NotImplemented
 
 
-def get_all_experiments_in_one_anndata(experiments_data_dir: Path = config.UMI_PATH,
+def get_all_experiments_in_one_anndata(experiments_data_dir: Path = config.UMI_DIR_PATH,
                                        meta_data_path: Path = config.META_DATA_PATH) -> ad.AnnData:
     return get_experiments_in_one_anndata(experiments_data_dir, meta_data_path, [])
 
 
-def get_only_untreated_experiments_in_one_anndata(experiments_data_dir: Path = config.UMI_PATH,
+def get_only_untreated_experiments_in_one_anndata(experiments_data_dir: Path = config.UMI_DIR_PATH,
                                                   meta_data_path: Path = config.META_DATA_PATH) -> ad.AnnData:
     return get_experiments_in_one_anndata(experiments_data_dir, meta_data_path, [drop_treated_batches])
 
@@ -31,6 +31,8 @@ def get_experiments_in_one_anndata(experiments_data_dir: Path, meta_data_path: P
                                    batch_filter_functions: List[Callable[[pd.DataFrame], pd.DataFrame]]) -> ad.AnnData:
     # Read annotation file
     metadata = pd.read_table(meta_data_path)
+    if config.DEBUG_MODE:
+        batch_filter_functions.append(lambda df: df.head(config.DEBUG_N_BATCHES))
     for filter_func in batch_filter_functions:
         metadata = filter_func(metadata)
 
