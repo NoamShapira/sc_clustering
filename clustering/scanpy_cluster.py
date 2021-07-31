@@ -1,9 +1,12 @@
 import logging
+from pathlib import Path
 
 import anndata as ad
 import scanpy as sc
 
 import config
+from data.data_loading import load_data_and_save_to_results_dir
+from utils import get_now_timestemp_as_string
 
 
 def transform_pca_adata(adata: ad.AnnData, pca_svd_solver=config.TL_PCA_SVD_SOLVER, pca_n_comps=config.TL_PCA_N_COMPS):
@@ -90,3 +93,9 @@ def pp_choose_genes_and_normelize(adata, filter_cells_only_during_pp: bool = Fal
     adata = pp_drop_genes_and_cells(adata, filter_cells_only_during_pp)
     normalize_and_choose_genes(adata)
     return adata
+
+
+def run_full_clustering_pipe_and_create_results_dir():
+    adata, experiment_results_dir_path = load_data_and_save_to_results_dir()
+    adata = run_full_pipe_from_config(adata, filter_cells_only_during_pp=True)
+    adata.write(Path(experiment_results_dir_path, f"final_adata_{get_now_timestemp_as_string()}.h5ad"))

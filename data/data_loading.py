@@ -1,8 +1,9 @@
 import logging
 from functools import partial
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
+import anndata
 import anndata as ad
 import pandas as pd
 import scanpy as sc
@@ -11,6 +12,7 @@ from tqdm.contrib.concurrent import process_map
 
 import config
 from data import meta_data_columns_names
+from utils import create_experiment_dir_and_return_path
 
 
 def drop_treated_batches(df: pd.DataFrame) -> pd.DataFrame:
@@ -58,3 +60,10 @@ def get_single_batch(row_tpl, col_names, experiments_data_dir):
         cur_data.obs[col_name] = row[col_name]
     logging.info(f"Reading , batch id - {row[meta_data_columns_names.BATCH_ID]}")
     return cur_data
+
+
+def load_data_and_save_to_results_dir() -> Tuple[anndata.AnnData, Path]:
+    experiment_results_dir_path = create_experiment_dir_and_return_path("simple_clustering")
+    adata = get_all_experiments_in_one_anndata()
+    adata.write(Path(experiment_results_dir_path, "loaded_data.h5ad"))
+    return adata, experiment_results_dir_path

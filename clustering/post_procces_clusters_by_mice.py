@@ -16,11 +16,18 @@ import config
 from clustering import scanpy_cluster
 from clustering.clustering_experiment_loading import get_name_of_last_experiment, get_last_result_from_experiment, \
     get_raw_data_from_experiment
+from clustering.scanpy_cluster import run_full_clustering_pipe_and_create_results_dir
 from data.meta_data_columns_names import ARM_DAY_BATCHMOUSE
 
 
 def evaluate_mouse_ingest_error(experiment_name: str = "last", clustering_method: str = "leiden",
                                 save_results_as_pickle: bool = False):
+    if experiment_name == "new":
+        assert clustering_method == config.CLUSTERING_METHOD,\
+            f"arg clustering_method is - {clustering_method}, expected from config - {config.CLUSTERING_METHOD}"
+        run_full_clustering_pipe_and_create_results_dir()
+        experiment_name = "last"
+
     adata = get_raw_data_from_experiment(experiment_name)
     clustered_adata = get_last_result_from_experiment(experiment_name)
 

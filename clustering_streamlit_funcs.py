@@ -3,7 +3,6 @@ import logging
 from pathlib import Path
 from typing import Tuple, Dict, Callable
 
-import anndata
 import anndata as an
 import pandas as pd
 import scanpy as sc
@@ -14,8 +13,7 @@ from sklearn import metrics
 from clustering import scanpy_cluster
 from clustering.meta_cell import load_meta_cell_and_merge_to_adata
 from data import preprocces
-from data.data_loading import get_all_experiments_in_one_anndata
-from utils import create_experiment_dir_and_return_path
+from data.data_loading import load_data_and_save_to_results_dir
 
 
 def scatter_n_genes_and_n_mt_genes_per_cell(adata, ax_1, ax_2):
@@ -31,13 +29,6 @@ def plot_raw_data(adata):
 
 
 # data loading
-def load_data_and_save_to_results_dir() -> Tuple[anndata.AnnData, Path]:
-    experiment_results_dir_path = create_experiment_dir_and_return_path("simple_clustering")
-    adata = get_all_experiments_in_one_anndata()
-    adata.write(Path(experiment_results_dir_path, "loaded_data.h5ad"))
-    return adata, experiment_results_dir_path
-
-
 @st.cache(allow_output_mutation=True)
 def load_data() -> Tuple[an.AnnData, Path]:
     adata, experiment_results_dir_path = load_data_and_save_to_results_dir()
