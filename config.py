@@ -1,13 +1,16 @@
 from pathlib import PurePosixPath
 
 # labs paths
-UMI_DIR_PATH = PurePosixPath("/home/labs/amit/eyald/sc_pipeline/scdb_v4_mouse/output/umi.tab/")
-ASAF_SERANO_META_DATA_DIR_PATH = PurePosixPath('/home/labs/amit/weiner/Serono/Serono11')
+AmitLab_Path = PurePosixPath("/home/labs/amit")
+UMI_DIR_PATH = PurePosixPath(AmitLab_Path, "eyald/sc_pipeline/scdb_v4_mouse/output/umi.tab/")
+ASAF_SERANO_META_DATA_DIR_PATH = PurePosixPath(AmitLab_Path, 'weiner/Serono/Serono11')
 META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'serono11_metadata.txt')
 NEW_META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'SeronoMetadata13.txt')
+UPDATED_MEATADATA_PATH = PurePosixPath(AmitLab_Path, 'noamsh/data/SeronoMetadata0.xlsx')
 
 # personal paths
 RESULTS_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_results')
+ANNOTATION_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_annotation')
 META_CELL_PATH = PurePosixPath('/home/labs/amit/noamsh/mc.csv')
 
 # env consts
