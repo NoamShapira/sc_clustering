@@ -5,7 +5,7 @@ import anndata as ad
 import scanpy as sc
 
 import config
-from data.data_loading import load_data_and_save_to_results_dir
+from data.data_loading import SeranoDataLoaderFactory, SeranoDataLoaderDescription
 from utils import get_now_timestemp_as_string
 
 
@@ -96,6 +96,7 @@ def pp_choose_genes_and_normelize(adata, filter_cells_only_during_pp: bool = Fal
 
 
 def run_full_clustering_pipe_and_create_results_dir():
-    adata, experiment_results_dir_path = load_data_and_save_to_results_dir()
+    adata, experiment_results_dir_path = SeranoDataLoaderFactory.create_serano_dataloader(
+        SeranoDataLoaderDescription.ARM_1_FROM_WEINER).load_data_to_anndata_and_save_to_dir()
     adata = run_full_pipe_from_config(adata, filter_cells_only_during_pp=True)
     adata.write(Path(experiment_results_dir_path, f"final_adata_{get_now_timestemp_as_string()}.h5ad"))

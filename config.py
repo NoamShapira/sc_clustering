@@ -6,7 +6,7 @@ UMI_DIR_PATH = PurePosixPath(AmitLab_Path, "eyald/sc_pipeline/scdb_v4_mouse/outp
 ASAF_SERANO_META_DATA_DIR_PATH = PurePosixPath(AmitLab_Path, 'weiner/Serono/Serono11')
 META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'serono11_metadata.txt')
 NEW_META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'SeronoMetadata13.txt')
-UPDATED_MEATADATA_PATH = PurePosixPath(AmitLab_Path, 'noamsh/data/SeronoMetadata0.xlsx')
+UPDATED_META_DATA_PATH = PurePosixPath(AmitLab_Path, 'noamsh/data/SeronoMetadata_v1_2021_08_21.xlsx')
 
 # personal paths
 RESULTS_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_results')
