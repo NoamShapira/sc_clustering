@@ -1,7 +1,7 @@
 import collections
 import logging
 from pathlib import Path
-from typing import Tuple, Dict, Callable
+from typing import Tuple, Dict, Callable, Union
 
 import anndata as an
 import pandas as pd
@@ -13,7 +13,8 @@ from sklearn import metrics
 from clustering import scanpy_cluster
 from clustering.meta_cell import load_meta_cell_and_merge_to_adata
 from data import preprocces
-from data.data_loading import SeranoDataLoaderFactory, SeranoDataLoaderDescription
+from data.serano_data_loading import SeranoDataLoaderFactory
+from data.serono_data_loading_description import SeranoDataLoaderDescription
 
 
 def scatter_n_genes_and_n_mt_genes_per_cell(adata, ax_1, ax_2):
@@ -30,9 +31,16 @@ def plot_raw_data(adata):
 
 # data loading
 @st.cache(allow_output_mutation=True)
-def load_data() -> Tuple[an.AnnData, Path]:
+def load_data(data_loading_description: Union[SeranoDataLoaderDescription, str]) -> Tuple[an.AnnData, Path]:
+    if isinstance(data_loading_description, str):
+        try:
+            data_loading_description = next(
+                serano_data_loading_desc for serano_data_loading_desc in SeranoDataLoaderDescription if
+                serano_data_loading_desc.value == data_loading_description)
+        except StopIteration:
+            raise Exception("Tried to load with unknown SeranoDataLoaderDescription")
     adata, experiment_results_dir_path = SeranoDataLoaderFactory.create_serano_dataloader(
-        SeranoDataLoaderDescription.ARM_1_FROM_WEINER).load_data_to_anndata_and_save_to_dir()
+        data_loading_description).load_data_to_anndata_and_save_to_dir()
     scanpy_cluster.pp_rename_vars_add_mt_metrics(adata)
     return adata, experiment_results_dir_path
 

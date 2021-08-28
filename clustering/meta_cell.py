@@ -4,9 +4,9 @@ from typing import NamedTuple
 import anndata as ad
 import pandas as pd
 
-import config
 from clustering.scanpy_cluster import run_full_pipe_from_config
-from data.data_loading import SeranoDataLoaderDescription, SeranoDataLoaderFactory
+from data.serano_data_loading import SeranoDataLoaderFactory
+from data.serono_data_loading_description import SeranoDataLoaderDescription
 
 
 class MetaCellResultsColumnsNames(NamedTuple):
@@ -44,9 +44,8 @@ def load_meta_cell_and_merge_to_adata(adata: ad.AnnData, path_to_meta_cell_resul
     return combined_adata
 
 
-def run_full_pipeline_and_load_meta_cell(
-        data_loader_desc: SeranoDataLoaderDescription = SeranoDataLoaderDescription.ARM_1_FROM_WEINER,
-        path_to_meta_cell_results=config.META_CELL_PATH) -> ad.AnnData:
+def run_full_pipeline_and_load_meta_cell(data_loader_desc: SeranoDataLoaderDescription,
+                                         path_to_meta_cell_results: Path) -> ad.AnnData:
     raw_adata = SeranoDataLoaderFactory.create_serano_dataloader(data_loader_desc).load_data_to_anndata()
     clustered_adata = run_full_pipe_from_config(raw_adata.copy(), filter_cells_only_during_pp=False)
     return load_meta_cell_and_merge_to_adata(clustered_adata, path_to_meta_cell_results)

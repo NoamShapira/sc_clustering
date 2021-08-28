@@ -8,9 +8,18 @@ from clustering.meta_cell import MetaCellResultsColumnsNames
 from clustering_streamlit_funcs import compute_metrics, load_data, plot_raw_data, \
     drop_bad_genes, normalize_and_choose_genes, compute_pca, compute_neighborhood_graph_cache, \
     computer_clusters_cache_and_load_reference
+from data.serono_data_loading_description import SeranoDataLoaderDescription
 from utils import get_now_timestemp_as_string
 
-raw_adata, experiment_results_dir_path = load_data()
+if config.DEBUG_MODE:
+    st.write("running in debug mode")
+st.title("Data Loading")
+all_known_descriptions = [desc.value for desc in SeranoDataLoaderDescription]
+chosen_loading_description = st.selectbox("select data loading description", all_known_descriptions,
+                                          index=next(i for i, e in enumerate(SeranoDataLoaderDescription) if
+                                                     e == config.SERANO_DATA_LOADING_DESCRIPTION)
+                                          )
+raw_adata, experiment_results_dir_path = load_data(chosen_loading_description)
 
 st.write(f"Load data result dir is {experiment_results_dir_path}")
 st.title(f"Raw Data")
@@ -76,5 +85,6 @@ if st.sidebar.button("Export for anotation"):
     export_adata_to_anotation(annotate_col_name=clustering_method_name,
                               compare_col_name=MetaCellResultsColumnsNames().meta_cell,
                               num_marker_genes=5,
-                              path_to_anotation_dir=config.ANNOTATION_DIR.joinpath(experiment_results_dir_path.parts[-1])
+                              path_to_anotation_dir=config.ANNOTATION_DIR.joinpath(
+                                  experiment_results_dir_path.parts[-1])
                               )
