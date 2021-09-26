@@ -10,3 +10,4 @@ scikit-misc
 # ray
 plotly
 imageio
+optuna
