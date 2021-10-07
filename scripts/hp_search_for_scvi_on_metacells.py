@@ -17,7 +17,8 @@ sys.path.append('/home/labs/amit/noamsh/repos/sc_clustering')
 import config
 from utils import get_now_timestemp_as_string
 
-parser = argparse.ArgumentParser(prog='scvi_hp_search', description="creating an optuna hyper parameter search")
+parser = argparse.ArgumentParser(prog='scvi_hp_search_on_meta_cells',
+                                 description="creating an optuna hyper parameter search")
 parser.add_argument("--metacells_file_path", type=str,
                     default=str(Path(config.RESULTS_DIR, "mc_2021_09_23__09_59_00", "metacells.h5ad")))
 parser.add_argument("--metacells_with_annot_file_path", type=str,
@@ -34,14 +35,6 @@ os.mkdir(experiment_results_dir_path)
 tb_logs_path = Path(experiment_results_dir_path, "tb_logs")
 os.mkdir(tb_logs_path)
 
-search_space = {
-    "n_hidden": [128, 64],
-    "n_layers": [1, 2],
-    "n_latent": [10, 25],
-    "n_neighbors": [10, 15],
-    'dropout_rate': [0.1, 0.3],
-    'epochs': [400]
-}
 
 def objective(trail):
     n_hidden = trail.suggest_categorical("n_hidden", [32, 64, 128, 256])
@@ -99,4 +92,6 @@ def objective(trail):
 study = optuna.create_study(direction="maximize") # # sampler=optuna.samplers.GridSampler(search_space)
 study.optimize(objective, n_trials=args.n_trials)
 
-joblib.dump(study, Path(experiment_results_dir_path, "joblib_study.pkl"))
+study_file_path = Path(experiment_results_dir_path, "joblib_study.pkl")
+print(f"saving study {study_file_path}")
+joblib.dump(study, study_file_path)
