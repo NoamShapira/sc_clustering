@@ -10,25 +10,29 @@ import pytorch_lightning.loggers as pl_loggers
 import scanpy as sc
 import scvi
 from sklearn.metrics import silhouette_score
+import argparse
 
 sys.path.append('/home/labs/amit/noamsh/repos/sc_clustering')
 
 import config
 from utils import get_now_timestemp_as_string
 
-metacells_file_path = Path(config.RESULTS_DIR, "mc_2021_09_23__09_59_00", "metacells.h5ad")
-metacells_with_annot_file_path = Path(config.RESULTS_DIR, "mc_2021_09_23__09_59_00", "scanpy_metacells.h5ad")
+parser = argparse.ArgumentParser(prog='scvi_hp_search', description="creating an optuna hyper parameter search")
+parser.add_argument("--metacells_file_path", type=str,
+                    default=str(Path(config.RESULTS_DIR, "mc_2021_09_23__09_59_00", "metacells.h5ad")))
+parser.add_argument("--metacells_with_annot_file_path", type=str,
+                    default=str(Path(config.RESULTS_DIR, "mc_2021_09_23__09_59_00", "scanpy_metacells.h5ad")))
+parser.add_argument("--normalize_data",type=bool, default=False)
+parser.add_argument("--choose_features_from_mc",type=bool, default=True)
+parser.add_argument("--save_data_and_results",type=bool, default=True)
+parser.add_argument("--n_trials",type=int, default=50)
+args = parser.parse_args()
 
 experiment_name = f"hp_search_scvi_on_meta_cells_{get_now_timestemp_as_string()}"
 experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
 os.mkdir(experiment_results_dir_path)
-
 tb_logs_path = Path(experiment_results_dir_path, "tb_logs")
 os.mkdir(tb_logs_path)
-
-normelize_data = False
-choose_features_from_mc = True
-N_TRIALS = 50
 
 search_space = {
     "n_hidden": [128, 64],
@@ -53,8 +57,8 @@ def objective(trail):
     os.mkdir(trail_results_path)
     sc.settings.figdir = trail_results_path
 
-    adata = ad.read_h5ad(metacells_file_path)
-    adata_with_scanpy = ad.read_h5ad(metacells_with_annot_file_path)
+    adata = ad.read_h5ad(args.metacells_file_path)
+    adata_with_scanpy = ad.read_h5ad(args.metacells_with_annot_file_path)
     adata.obs['broad_cell_type'] = adata_with_scanpy.obs['broad_cell_type']
     adata.obs['leiden'] = adata_with_scanpy.obs['leiden']
     adata.obs['cell_type'] = adata_with_scanpy.obs['cell_type']
@@ -64,12 +68,12 @@ def objective(trail):
                        min_counts=200)  # This is a weaker threshold than above. It is just to population the n_counts column in adata
     sc.pp.filter_genes(adata, min_cells=2)  # filter genes detected in fewer than 3 cells
 
-    if normelize_data:
+    if args.normalize_data:
         sc.pp.normalize_total(adata, target_sum=1e6)
         sc.pp.log1p(adata)
         sc.pp.highly_variable_genes(adata, min_mean=0.1, max_mean=3, min_disp=0.8)
         adata.var['highly_variable'] = np.logical_or(adata.var['highly_variable'], adata.var.feature_gene > 3)
-    if choose_features_from_mc:
+    if args.choose_features_from_mc:
         adata = adata[:,
                 [gn for gn in adata.var_names if
                  gn in adata_with_scanpy.var['feature_gene'] and adata_with_scanpy.var['feature_gene'][gn] != 0]].copy()
@@ -86,12 +90,13 @@ def objective(trail):
     sc.pl.umap(adata, color=["cell_type", "leiden", "broad_cell_type"],
                save="_annotation_on_graph_with_scvi_embedding")
 
-    adata.write(Path(trail_results_path, "adata_with_annot_and_scvi.h5ad"))
+    if args.save_data_and_results:
+        adata.write(Path(trail_results_path, "adata_with_annot_and_scvi.h5ad"))
 
     return silhouette_score(adata.obsm["X_scVI"], labels=list(adata.obs["broad_cell_type"]))
 
 
 study = optuna.create_study(direction="maximize") # # sampler=optuna.samplers.GridSampler(search_space)
-study.optimize(objective, n_trials=N_TRIALS)
+study.optimize(objective, n_trials=args.n_trials)
 
-joblib.dump(study, Path(experiment_results_dir_path, "study.pkl"))
+joblib.dump(study, Path(experiment_results_dir_path, "joblib_study.pkl"))
