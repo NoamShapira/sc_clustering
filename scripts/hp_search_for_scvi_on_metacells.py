@@ -46,7 +46,7 @@ def objective(trail):
 
     trail_results_path = Path(experiment_results_dir_path,
                               f"hidden_{n_hidden}_layers_{n_layers}_latent_{n_latent}"
-                              f"_neighbors_{n_neighbors}_dropout_{dropout_rate}_epochs_{epochs}")
+                              f"_neighbors_{n_neighbors}_dropout_{round(dropout_rate, 3)}_epochs_{epochs}")
     os.mkdir(trail_results_path)
     sc.settings.figdir = trail_results_path
 
@@ -78,12 +78,11 @@ def objective(trail):
     model.train(max_epochs=epochs, logger=tb_logger)
     adata.obsm["X_scVI"] = model.get_latent_representation()
 
-    sc.pp.neighbors(adata, use_rep="X_scVI", n_neighbors=n_neighbors)
-    sc.tl.umap(adata, min_dist=0.2)
-    sc.pl.umap(adata, color=["cell_type", "leiden", "broad_cell_type"],
-               save="_annotation_on_graph_with_scvi_embedding")
-
     if args.save_data_and_results:
+        sc.pp.neighbors(adata, use_rep="X_scVI", n_neighbors=n_neighbors)
+        sc.tl.umap(adata, min_dist=0.2)
+        sc.pl.umap(adata, color=["cell_type", "leiden", "broad_cell_type"],
+                   save="_annotation_on_graph_with_scvi_embedding")
         adata.write(Path(trail_results_path, "adata_with_annot_and_scvi.h5ad"))
 
     return silhouette_score(adata.obsm["X_scVI"], labels=list(adata.obs["broad_cell_type"]))
