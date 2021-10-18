@@ -22,9 +22,9 @@ class AnnDataLoader(ABC):
         pass
 
     def load_data_to_anndata_and_save_to_dir(self, results_dir: Optional[Path] = None,
-                                             file_name: str = "loaded_data.h5ad") -> Tuple[ad.AnnData, Path]:
-        results_dir = results_dir if results_dir is not None else create_experiment_dir_and_return_path(
-            "simple_clustering")
+                                             file_name: str = "loaded_data.h5ad",
+                                             experiment_name:str = "simple_clustering") -> Tuple[ad.AnnData, Path]:
+        results_dir = results_dir if results_dir is not None else create_experiment_dir_and_return_path(experiment_name)
         adata = self.load_data_to_anndata()
         adata.write(Path(results_dir, file_name))
         return adata, results_dir
