@@ -35,13 +35,13 @@ parser.add_argument("--load_labeled_adata_from", type=str,
 parser.add_argument("--save_labeled_adata_to", type=str,
                     default=str(Path(experiment_results_dir_path, "scanpy_metacells.h5ad")))
 parser.add_argument('--n_trials', type=int, default=50)
-parser.add_argument('--calc_and_save_umap', type=bool, default=True)
+parser.add_argument('--calc_and_save_umap', type=bool, default=False)
 parser.add_argument('--test_mod', type=bool, default=False)
 
 args = parser.parse_args()
 
 os.mkdir(experiment_results_dir_path)
-shutil.copyfile(args.ls , args.save_raw_adata_to)
+shutil.copyfile(args.load_raw_adata_from , args.save_raw_adata_to)
 shutil.copyfile(args.load_labeled_adata_from, args.save_labeled_adata_to)
 sc.settings.figdir = experiment_results_dir_path
 
@@ -53,9 +53,9 @@ best_model = None
 def evaluate_scvi_on_raw_data(trail):
     n_genes = trail.suggest_int("n_genes", 2000, 6000, step=1000)
     epochs = trail.suggest_int("epochs", 50, 100, step=25)
-    n_latent = trail.suggest_int("n_latent", 10, 50, step=10)
+    n_latent = trail.suggest_int("n_latent", 10, 40, step=10)
     n_layers = trail.suggest_int("n_layers", 1, 2)
-    n_hidden = trail.suggest_categorical("n_hidden", [32, 64, 128, 256])
+    n_hidden = trail.suggest_categorical("n_hidden", [32, 64, 128])
     dropout_rate = trail.suggest_float("dropout_rate", 0.1, 0.7)
 
     if args.test_mod:
@@ -120,6 +120,8 @@ def update_best_model_callback(study, trial):
     if study.best_trial == trial:
         adata_with_best_embedding = cur_adata_with_embedding
         best_model = cur_model
+        best_model.save(str(Path(experiment_results_dir_path, "best_model_with_batch/")))
+        adata_with_best_embedding.write(Path(experiment_results_dir_path, "adata_with_scvi.h5ad"))
 
 study = optuna.create_study(direction="maximize")
 study.optimize(evaluate_scvi_on_raw_data,
@@ -129,6 +131,9 @@ study.optimize(evaluate_scvi_on_raw_data,
 study_file_path = Path(experiment_results_dir_path, "joblib_study.pkl")
 logging.info(f"saving study {study_file_path}")
 joblib.dump(study, study_file_path)
-best_model.save(str(Path(experiment_results_dir_path, "best_model_with_batch/")))
-adata_with_best_embedding.write(Path(experiment_results_dir_path, "adata_with_scvi.h5ad"))
 logging.info(f"finished saving")
+
+sc.settings.figdir = experiment_results_dir_path
+sc.pp.neighbors(adata_with_best_embedding, use_rep="X_scVI")
+sc.tl.umap(adata_with_best_embedding, min_dist=0.3)
+sc.pl.umap(adata_with_best_embedding, color=[TREATMENT_ARM, "cell_type"], save="_best_with_annotation_on_scvi_embedding")
