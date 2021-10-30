@@ -5,15 +5,19 @@ from data.serono_data_loading_description import SeranoDataLoaderDescription
 
 AmitLab_Path = PurePosixPath("/home/labs/amit")
 UMI_DIR_PATH = PurePosixPath(AmitLab_Path, "eyald/sc_pipeline/scdb_v4_mouse/output/umi.tab/")
-ASAF_SERANO_META_DATA_DIR_PATH = PurePosixPath(AmitLab_Path, 'weiner/Serono/Serono11')
+ASAF_SERANO_DIR_PATH = PurePosixPath(AmitLab_Path, 'weiner/Serono')
+ASAF_SERANO_META_DATA_DIR_PATH = PurePosixPath(ASAF_SERANO_DIR_PATH, 'Serono11')
+ASAF_META_CELL_ATLAS_DIR_PATH = PurePosixPath(
+    ASAF_SERANO_DIR_PATH, "Serono14/clustering_results/simple_clustering_2021_09_05__15_04_43")
 META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'serono11_metadata.txt')
 NEW_META_DATA_PATH = PurePosixPath(ASAF_SERANO_META_DATA_DIR_PATH, 'SeronoMetadata13.txt')
 UPDATED_META_DATA_PATH = PurePosixPath(AmitLab_Path, 'noamsh/data/SeronoMetadata_v2_2021_08_28.xlsx')
 
 # personal paths
-RESULTS_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_results')
-ANNOTATION_DIR = PurePosixPath('/home/labs/amit/noamsh/clustering_annotation')
-META_CELL_PATH = PurePosixPath('/home/labs/amit/noamsh/mc.csv')
+NOAM_DIR_PATH = PurePosixPath(AmitLab_Path, 'noamsh')
+RESULTS_DIR = PurePosixPath(NOAM_DIR_PATH, 'clustering_results')
+ANNOTATION_DIR = PurePosixPath(NOAM_DIR_PATH, 'clustering_annotation')
+META_CELL_PATH = PurePosixPath(NOAM_DIR_PATH, 'mc.csv')
 
 
 # data loading

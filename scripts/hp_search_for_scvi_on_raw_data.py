@@ -19,11 +19,10 @@ import config
 from data.meta_data_columns_names import TREATMENT_ARM
 from utils import get_now_timestemp_as_string
 
+
 experiment_name = f"hp_search_scvi_on_raw_gene_counts_{get_now_timestemp_as_string()}"
 experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
-asaf_meta_cell_dir_path = Path(
-    "/home/labs/amit/weiner/Serono/Serono14/clustering_results/simple_clustering_2021_09_05__15_04_43")
-asaf_raw_adata_path = Path(asaf_meta_cell_dir_path, "cells.h5ad")
+asaf_raw_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "cells.h5ad")
 new_adata_path = Path(experiment_results_dir_path, "cells.h5ad")
 
 parser = argparse.ArgumentParser(prog='scvi_hp_search_on_raw_data',
@@ -31,7 +30,7 @@ parser = argparse.ArgumentParser(prog='scvi_hp_search_on_raw_data',
 parser.add_argument("--load_raw_adata_from", type=str, default=str(asaf_raw_adata_path))
 parser.add_argument('--save_raw_adata_to', type=str, default=str(new_adata_path))
 parser.add_argument("--load_labeled_adata_from", type=str,
-                    default=str(Path(asaf_meta_cell_dir_path, "scanpy_metacells.h5ad")))
+                    default=str(Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "scanpy_metacells.h5ad")))
 parser.add_argument("--save_labeled_adata_to", type=str,
                     default=str(Path(experiment_results_dir_path, "scanpy_metacells.h5ad")))
 parser.add_argument('--n_trials', type=int, default=50)
@@ -41,7 +40,7 @@ parser.add_argument('--test_mod', type=bool, default=False)
 args = parser.parse_args()
 
 os.mkdir(experiment_results_dir_path)
-shutil.copyfile(args.load_raw_adata_from , args.save_raw_adata_to)
+shutil.copyfile(args.load_raw_adata_from, args.save_raw_adata_to)
 shutil.copyfile(args.load_labeled_adata_from, args.save_labeled_adata_to)
 sc.settings.figdir = experiment_results_dir_path
 
@@ -49,6 +48,7 @@ adata_with_best_embedding = None
 cur_adata_with_embedding = None
 cur_model = None
 best_model = None
+
 
 def evaluate_scvi_on_raw_data(trail):
     n_genes = trail.suggest_int("n_genes", 2000, 6000, step=1000)
@@ -114,6 +114,7 @@ def evaluate_scvi_on_raw_data(trail):
 
     return silhouette_score(adata_without_nan.obsm["X_scVI"], labels=list(adata_without_nan.obs["broad_cell_type"]))
 
+
 def update_best_model_callback(study, trial):
     global adata_with_best_embedding
     global best_model
@@ -121,7 +122,8 @@ def update_best_model_callback(study, trial):
         adata_with_best_embedding = cur_adata_with_embedding
         best_model = cur_model
         best_model.save(str(Path(experiment_results_dir_path, "best_model_with_batch/")))
-        adata_with_best_embedding.write(Path(experiment_results_dir_path, "adata_with_scvi.h5ad"))
+        adata_with_best_embedding.write(Path(experiment_results_dir_path, "adata_with_scvi_of_best_model.h5ad"))
+
 
 study = optuna.create_study(direction="maximize")
 study.optimize(evaluate_scvi_on_raw_data,
@@ -136,4 +138,5 @@ logging.info(f"finished saving")
 sc.settings.figdir = experiment_results_dir_path
 sc.pp.neighbors(adata_with_best_embedding, use_rep="X_scVI")
 sc.tl.umap(adata_with_best_embedding, min_dist=0.3)
-sc.pl.umap(adata_with_best_embedding, color=[TREATMENT_ARM, "cell_type"], save="_best_with_annotation_on_scvi_embedding")
+sc.pl.umap(adata_with_best_embedding, color=[TREATMENT_ARM, "cell_type"],
+           save="_best_with_annotation_on_scvi_embedding")
