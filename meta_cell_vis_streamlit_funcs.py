@@ -5,7 +5,7 @@ import streamlit as st
 import imageio
 
 import config
-from clustering.meta_cell import run_full_pipeline_and_load_meta_cell, MetaCellResultsColumnsNames
+from clustering.meta_cell_csv import run_full_pipeline_and_load_meta_cell, MetaCellResultsColumnsNames
 from clustering.post_procces_clusters_by_mice import compute_confusion_matrix
 from config import CLUSTERING_METHOD
 from data.serono_data_loading_description import SeranoDataLoaderDescription

@@ -4,7 +4,7 @@ import scanpy as sc
 import streamlit as st
 
 import config
-from clustering.meta_cell import MetaCellResultsColumnsNames
+from clustering.meta_cell_csv import MetaCellResultsColumnsNames
 from clustering_streamlit_funcs import compute_metrics, load_data, plot_raw_data, \
     drop_bad_genes, normalize_and_choose_genes, compute_pca, compute_neighborhood_graph_cache, \
     computer_clusters_cache_and_load_reference

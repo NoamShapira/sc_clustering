@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from sklearn import metrics
 
 from clustering import scanpy_cluster
-from clustering.meta_cell import load_meta_cell_and_merge_to_adata
+from clustering.meta_cell_csv import load_meta_cell_and_merge_to_adata
 from data import preprocces
 from data.serano_data_loading import SeranoDataLoaderFactory
 from data.serono_data_loading_description import SeranoDataLoaderDescription
