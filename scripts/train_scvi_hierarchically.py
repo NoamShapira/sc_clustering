@@ -3,8 +3,11 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import List
 
 import anndata as ad
+import scanpy as sc
+from sklearn.cluster import AgglomerativeClustering
 
 import config
 from data.meta_data_columns_names import TREATMENT_ARM
@@ -12,6 +15,22 @@ from embedding.scvi_pipe import train_scvi_on_adata
 from utils import get_now_timestemp_as_string
 
 sys.path.append(str(Path(config.AmitLab_Path, 'noamsh')))
+
+def split_to_major_cluster(adata_with_scvi_emb: ad.AnnData, emb_col_name:str,
+                           clustering_model_name="agglomerative") -> List[ad.AnnData]:
+    adatas = []
+    col_name_to_split_by = "major_clusters"
+    if clustering_model_name == "agglomerative":
+        clustering_model = AgglomerativeClustering(n_clusters=2, linkage='ward')
+        adata_with_scvi_emb.obs[col_name_to_split_by] = clustering_model.fit(adata.obsm[emb_col_name]).labels_
+    else:
+        raise NotImplementedError
+
+    for group, idx in adata_with_scvi_emb.obs.groupby(col_name_to_split_by).indices.items():
+        sub_adata = adata_with_scvi_emb[idx].copy()
+        adatas.append(sub_adata)
+
+    return adatas
 
 experiment_name = f"hierarchical_scvi_{get_now_timestemp_as_string()}"
 experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
@@ -21,7 +40,6 @@ asaf_labeled_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "scanpy_met
 new_labeled_adata_path = Path(experiment_results_dir_path, "scanpy_metacells.h5ad")
 
 parser = argparse.ArgumentParser()
-
 parser.add_argument('--test_mod', type=bool, default=False)
 parser.add_argument("--load_raw_adata_from", type=str, default=str(asaf_raw_adata_path))
 parser.add_argument('--save_raw_adata_to', type=str, default=str(new_adata_path))
