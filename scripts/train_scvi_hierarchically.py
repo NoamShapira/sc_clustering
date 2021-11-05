@@ -6,31 +6,32 @@ from pathlib import Path
 from typing import List
 
 import anndata as ad
-import scanpy as sc
 from sklearn.cluster import AgglomerativeClustering
 
+sys.path.append('/home/labs/amit/noamsh/repos/sc_clustering')
 import config
 from data.meta_data_columns_names import TREATMENT_ARM
 from embedding.scvi_pipe import train_scvi_on_adata
 from utils import get_now_timestemp_as_string
 
-sys.path.append(str(Path(config.AmitLab_Path, 'noamsh')))
 
-def split_to_major_cluster(adata_with_scvi_emb: ad.AnnData, emb_col_name:str,
-                           clustering_model_name="agglomerative") -> List[ad.AnnData]:
-    adatas = []
+def split_to_major_cluster(adata_with_scvi_emb: ad.AnnData, emb_col_name: str,
+                           clustering_model_name: str = "agglomerative",
+                           num_clusters: int = 2) -> List[ad.AnnData]:
     col_name_to_split_by = "major_clusters"
     if clustering_model_name == "agglomerative":
-        clustering_model = AgglomerativeClustering(n_clusters=2, linkage='ward')
+        clustering_model = AgglomerativeClustering(n_clusters=num_clusters, linkage='ward')
         adata_with_scvi_emb.obs[col_name_to_split_by] = clustering_model.fit(adata.obsm[emb_col_name]).labels_
     else:
         raise NotImplementedError
 
+    adatas = []
     for group, idx in adata_with_scvi_emb.obs.groupby(col_name_to_split_by).indices.items():
         sub_adata = adata_with_scvi_emb[idx].copy()
         adatas.append(sub_adata)
 
     return adatas
+
 
 experiment_name = f"hierarchical_scvi_{get_now_timestemp_as_string()}"
 experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
@@ -47,6 +48,11 @@ parser.add_argument("--load_labeled_adata_from", type=str, default=str(asaf_labe
 parser.add_argument("--save_labeled_adata_to", type=str, default=str(new_labeled_adata_path))
 parser.add_argument("--pp_n_top_variable_genes", type=int, default=3000)
 
+parser.add_argument("--n_layers", type=int, default=1)
+parser.add_argument("--n_latent", type=int, default=30)
+parser.add_argument("--dropout_rate", type=float, default=0.5)
+parser.add_argument("--n_hidden", type=int, default=64)
+
 args = parser.parse_args()
 
 os.mkdir(experiment_results_dir_path)
@@ -54,10 +60,10 @@ shutil.copyfile(args.load_raw_adata_from, args.save_raw_adata_to)
 shutil.copyfile(args.load_labeled_adata_from, args.save_labeled_adata_to)
 
 adata = ad.read_h5ad(args.save_raw_adata_to)
-adata_with_labels = ad.read_h5ad(args.save_labeled_adata_to)
+# adata_with_labels = ad.read_h5ad(args.save_labeled_adata_to)
 if args.test_mod:
-    adata = adata[0:500, :]
-    adata_with_labels = adata_with_labels[adata.obs, :]
+    adata = adata[0:300, :]
+    # adata_with_labels = adata_with_labels[adata.obs, :]
 
 adata_with_scvi_emb = train_scvi_on_adata(adata, args_for_scvi_model=args, results_dir=experiment_results_dir_path,
                                           return_adata_with_embedding=True, emb_col_name="X_scVI",
@@ -66,7 +72,10 @@ adatas_of_major_cluster = split_to_major_cluster(adata_with_scvi_emb, emb_col_na
 
 for i, adata_of_cluster in enumerate(adatas_of_major_cluster):
     split_results_dir_path = Path(experiment_results_dir_path, f"cluster_{i}")
-    cur_adata_with_scvi_emb = train_scvi_on_adata(adata_of_cluster, args_for_scvi_model=args,
-                                                  results_dir=split_results_dir_path, return_adata_with_embedding=True,
-                                                  emb_col_name=f"X_scVI_{i}", batch_col_name=TREATMENT_ARM,
-                                                  n_variable_genes=args.pp_n_top_variable_genes)
+    os.mkdir(split_results_dir_path)
+    train_scvi_on_adata(adata_of_cluster, args_for_scvi_model=args,
+                        results_dir=split_results_dir_path, return_adata_with_embedding=True,
+                        emb_col_name=f"X_scVI_{i}", batch_col_name=TREATMENT_ARM,
+                        n_variable_genes=args.pp_n_top_variable_genes)
+
+print("finished script !!")
