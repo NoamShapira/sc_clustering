@@ -20,28 +20,32 @@ from data.meta_data_columns_names import TREATMENT_ARM
 from utils import get_now_timestemp_as_string
 
 
-experiment_name = f"hp_search_scvi_on_raw_gene_counts_{get_now_timestemp_as_string()}"
-experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
 asaf_raw_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "cells.h5ad")
-new_adata_path = Path(experiment_results_dir_path, "cells.h5ad")
+asaf_labeled_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "scanpy_metacells.h5ad")
+
+experiment_name = f"hp_search_scvi_on_raw_gene_counts_{get_now_timestemp_as_string()}"
+default_experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
 
 parser = argparse.ArgumentParser(prog='scvi_hp_search_on_raw_data',
                                  description="creating an optuna hyper parameter search")
+
 parser.add_argument("--load_raw_adata_from", type=str, default=str(asaf_raw_adata_path))
-parser.add_argument('--save_raw_adata_to', type=str, default=str(new_adata_path))
-parser.add_argument("--load_labeled_adata_from", type=str,
-                    default=str(Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "scanpy_metacells.h5ad")))
-parser.add_argument("--save_labeled_adata_to", type=str,
-                    default=str(Path(experiment_results_dir_path, "scanpy_metacells.h5ad")))
+parser.add_argument("--load_labeled_adata_from", type=str, default=str(asaf_labeled_adata_path))
+parser.add_argument("--results_dir", type=str, default=str(default_experiment_results_dir_path))
+
 parser.add_argument('--n_trials', type=int, default=50)
-parser.add_argument('--calc_and_save_umap', type=bool, default=False)
+parser.add_argument('--calc_and_save_umap_of_every_model', type=bool, default=False)
 parser.add_argument('--test_mod', type=bool, default=False)
 
 args = parser.parse_args()
 
+experiment_results_dir_path = args.results_dir
+new_adata_path = Path(experiment_results_dir_path, "cells.h5ad")
+new_labeled_adata_path = Path(experiment_results_dir_path, "scanpy_metacells.h5ad")
+
 os.mkdir(experiment_results_dir_path)
-shutil.copyfile(args.load_raw_adata_from, args.save_raw_adata_to)
-shutil.copyfile(args.load_labeled_adata_from, args.save_labeled_adata_to)
+shutil.copyfile(args.load_raw_adata_from, new_adata_path)
+shutil.copyfile(args.load_labeled_adata_from, new_labeled_adata_path)
 sc.settings.figdir = experiment_results_dir_path
 
 adata_with_best_embedding = None
@@ -71,7 +75,7 @@ def evaluate_scvi_on_raw_data(trail):
     os.mkdir(trail_results_path)
     sc.settings.figdir = trail_results_path
 
-    adata = ad.read_h5ad(args.save_raw_adata_to)
+    adata = ad.read_h5ad(new_adata_path)
     if args.test_mod:
         adata = adata[0:500, :]
     adata.layers["counts"] = adata.X.copy()  # preserve counts
@@ -88,7 +92,7 @@ def evaluate_scvi_on_raw_data(trail):
         batch_key=TREATMENT_ARM
     )
 
-    adata_with_scanpy = ad.read_h5ad(args.save_labeled_adata_to)
+    adata_with_scanpy = ad.read_h5ad(new_labeled_adata_path)
     adata.obs = pd.merge(left=adata.obs.astype({"metacell": "str"}).reset_index(),
                          right=adata_with_scanpy.obs[["cell_type", "broad_cell_type"]].reset_index().rename(
                              columns={"index": "mc_num"}),
