@@ -110,7 +110,7 @@ def evaluate_scvi_on_raw_data(trail):
     global cur_model
     cur_model = model
 
-    if args.calc_and_save_umap:
+    if args.calc_and_save_umap_of_every_model:
         logging.info(f"computing umap for trail {trail_results_path}")
         sc.pp.neighbors(adata, use_rep="X_scVI")
         sc.tl.umap(adata, min_dist=0.3)

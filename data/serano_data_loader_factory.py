@@ -1,9 +1,15 @@
+from enum import Enum
+
 import pandas as pd
 
 import config
 from data.data_loaders import SeranoDataLoader
 from data.meta_data_columns_names import TREATMENT_ARM
-from data.serono_data_loading_description import SeranoDataLoaderDescription
+
+
+class SeranoDataLoaderDescription(Enum):
+    ARMS_1_2_3_FROM_NOAMSH = "arms_1_2_3_from_noamsh"
+    ARM_1_FROM_WEINER = "arm_1_from_weiner"
 
 
 class SeranoDataLoaderFactory:

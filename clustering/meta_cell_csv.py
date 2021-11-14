@@ -5,8 +5,7 @@ import anndata as ad
 import pandas as pd
 
 from clustering.scanpy_cluster import run_full_pipe_from_config
-from data.serano_data_loading import SeranoDataLoaderFactory
-from data.serono_data_loading_description import SeranoDataLoaderDescription
+from data.serano_data_loader_factory import SeranoDataLoaderFactory, SeranoDataLoaderDescription
 
 
 class MetaCellResultsColumnsNames(NamedTuple):

@@ -8,7 +8,7 @@ import config
 from clustering.meta_cell_csv import run_full_pipeline_and_load_meta_cell, MetaCellResultsColumnsNames
 from clustering.post_procces_clusters_by_mice import compute_confusion_matrix
 from config import CLUSTERING_METHOD
-from data.serono_data_loading_description import SeranoDataLoaderDescription
+from data.serano_data_loader_factory import SeranoDataLoaderDescription
 
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)

@@ -5,8 +5,7 @@ import anndata as ad
 import scanpy as sc
 
 import config
-from data.serano_data_loading import SeranoDataLoaderFactory
-from data.serono_data_loading_description import SeranoDataLoaderDescription
+from data.serano_data_loader_factory import SeranoDataLoaderFactory, SeranoDataLoaderDescription
 from utils import get_now_timestemp_as_string
 
 

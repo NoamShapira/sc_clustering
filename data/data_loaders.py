@@ -32,7 +32,7 @@ class AnnDataLoader(ABC):
 
 class SeranoDataLoader(AnnDataLoader):
     def __init__(self, experiments_data_dir: Path, meta_data_path: Path,
-                 batch_filter_functions: List[Callable[[pd.DataFrame], pd.DataFrame]]):
+                 batch_filter_functions: Optional[List[Callable[[pd.DataFrame], pd.DataFrame]]] = None):
         self.experiments_data_dir = experiments_data_dir
         self.meta_data_path = meta_data_path
         self.batch_filter_functions = batch_filter_functions if batch_filter_functions is not None else []

@@ -1,8 +1,6 @@
 from pathlib import PurePosixPath
 
 # labs paths
-from data.serono_data_loading_description import SeranoDataLoaderDescription
-
 AmitLab_Path = PurePosixPath("/home/labs/amit")
 UMI_DIR_PATH = PurePosixPath(AmitLab_Path, "eyald/sc_pipeline/scdb_v4_mouse/output/umi.tab/")
 ASAF_SERANO_DIR_PATH = PurePosixPath(AmitLab_Path, 'weiner/Serono')
@@ -19,9 +17,6 @@ RESULTS_DIR = PurePosixPath(NOAM_DIR_PATH, 'clustering_results')
 ANNOTATION_DIR = PurePosixPath(NOAM_DIR_PATH, 'clustering_annotation')
 META_CELL_PATH = PurePosixPath(NOAM_DIR_PATH, 'mc.csv')
 
-
-# data loading
-SERANO_DATA_LOADING_DESCRIPTION :SeranoDataLoaderDescription = SeranoDataLoaderDescription.ARMS_1_2_3_FROM_NOAMSH
 
 # env consts
 IO_N_WORKERS = 32

@@ -13,8 +13,7 @@ from sklearn import metrics
 from clustering import scanpy_cluster
 from clustering.meta_cell_csv import load_meta_cell_and_merge_to_adata
 from data import preprocces
-from data.serano_data_loading import SeranoDataLoaderFactory
-from data.serono_data_loading_description import SeranoDataLoaderDescription
+from data.serano_data_loader_factory import SeranoDataLoaderFactory, SeranoDataLoaderDescription
 
 
 def scatter_n_genes_and_n_mt_genes_per_cell(adata, ax_1, ax_2):
