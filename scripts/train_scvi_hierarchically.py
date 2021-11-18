@@ -69,10 +69,12 @@ if args.split_and_continue_from_dir == "":
                                               batch_col_name=TREATMENT_ARM,
                                               n_variable_genes=args.pp_n_top_variable_genes)
 else:
+    logging.info("training scvi model on all data")
     adata_with_scvi_emb = ad.read_h5ad(
         Path(args.split_and_continue_from_dir, f"adata_with_embedding_in_{emb_col_name}.h5ad"))
     adata_with_scvi_emb.write(Path(args.save_results_to, f"loaded_adata_with_embedding_in_{emb_col_name}.h5ad"))
 
+logging.info("spliting adata to major clusters")
 adatas_of_major_cluster = split_to_major_cluster(adata_with_scvi_emb, emb_col_name=emb_col_name,
                                                  clustering_model_name=args.clustering_method,
                                                  num_clusters=args.num_clusters_to_split_to)
@@ -81,6 +83,7 @@ for i, adata_of_cluster in enumerate(adatas_of_major_cluster):
     split_results_dir_path = Path(args.save_results_to, f"cluster_{i}")
     os.mkdir(split_results_dir_path)
     if len(adata_of_cluster) >= args.min_percentage_of_cluster_to_compute_new_embedding * len(adata_with_scvi_emb):
+        logging.info(f"training scvi model on cluster {i}")
         train_scvi_on_adata(adata_of_cluster, args_for_scvi_model=args,
                             results_dir=split_results_dir_path, return_adata_with_embedding=False,
                             emb_col_name=f"{emb_col_name}_{i}", batch_col_name=TREATMENT_ARM,

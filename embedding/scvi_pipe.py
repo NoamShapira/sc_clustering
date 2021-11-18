@@ -1,17 +1,19 @@
 from argparse import Namespace
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, Tuple
 
 import anndata as ad
 import scanpy as sc
 import scvi
+from scvi.model import SCVI
 
 
 def train_scvi_on_adata(adata: ad.AnnData, n_variable_genes: int, batch_col_name: str,
                         return_adata_with_embedding: bool, emb_col_name: str, args_for_scvi_model: Namespace,
                         norm_target_sum: float = 1e6, results_dir: Optional[Path] = None,
-                        raw_counts_to_layer_name: str = "counts",
-                        max_epochs: Optional[int] = None, drop_genes_and_cells: bool = False) -> Optional[ad.AnnData]:
+                        raw_counts_to_layer_name: str = "counts", return_model: bool = False,
+                        max_epochs: Optional[int] = None, drop_genes_and_cells: bool = False) ->\
+        Union[ad.AnnData, SCVI, Tuple[ad.AnnData, SCVI], None]:
     if drop_genes_and_cells:
         raise NotImplementedError
 
@@ -39,5 +41,9 @@ def train_scvi_on_adata(adata: ad.AnnData, n_variable_genes: int, batch_col_name
         adata.write(Path(results_dir, f"adata_with_embedding_in_{emb_col_name}.h5ad"))
         model.save(str(Path(results_dir, "model/")))
 
+    if return_adata_with_embedding and return_model:
+        return adata.copy(), model
+    if return_model:
+        return model
     if return_adata_with_embedding:
         return adata.copy()

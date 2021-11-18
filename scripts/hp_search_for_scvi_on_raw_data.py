@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import sys
+from argparse import Namespace
 from pathlib import Path
 
 import anndata as ad
@@ -10,15 +11,15 @@ import joblib
 import optuna
 import pandas as pd
 import scanpy as sc
-import scvi
 from sklearn.metrics import silhouette_score
+
+from embedding.scvi_pipe import train_scvi_on_adata
 
 sys.path.append('/home/labs/amit/noamsh/repos/sc_clustering')
 
 import config
 from data.meta_data_columns_names import TREATMENT_ARM
 from utils import get_now_timestemp_as_string
-
 
 asaf_raw_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "cells.h5ad")
 asaf_labeled_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "scanpy_metacells.h5ad")
@@ -53,6 +54,8 @@ cur_adata_with_embedding = None
 cur_model = None
 best_model = None
 
+emb_col_name = "X_scVI"
+
 
 def evaluate_scvi_on_raw_data(trail):
     n_genes = trail.suggest_int("n_genes", 2000, 6000, step=1000)
@@ -78,37 +81,21 @@ def evaluate_scvi_on_raw_data(trail):
     adata = ad.read_h5ad(new_adata_path)
     if args.test_mod:
         adata = adata[0:500, :]
-    adata.layers["counts"] = adata.X.copy()  # preserve counts
-    sc.pp.normalize_total(adata, target_sum=1e6)
-    sc.pp.log1p(adata)
-    adata.raw = adata
 
-    sc.pp.highly_variable_genes(
-        adata,
-        n_top_genes=n_genes,
-        subset=True,
-        layer="counts",
-        flavor="seurat_v3",
-        batch_key=TREATMENT_ARM
-    )
+    scvi_args = Namespace(dropout_rate=dropout_rate, n_hidden=n_hidden, n_latent=n_latent, n_layers=n_layers)
+    adata_with_scvi_emb, model = train_scvi_on_adata(adata, args_for_scvi_model=scvi_args,
+                                                     return_adata_with_embedding=True, return_model=True,
+                                                     emb_col_name=emb_col_name,
+                                                     batch_col_name=TREATMENT_ARM, max_epochs=epochs,
+                                                     n_variable_genes=n_genes)
 
     adata_with_scanpy = ad.read_h5ad(new_labeled_adata_path)
-    adata.obs = pd.merge(left=adata.obs.astype({"metacell": "str"}).reset_index(),
-                         right=adata_with_scanpy.obs[["cell_type", "broad_cell_type"]].reset_index().rename(
-                             columns={"index": "mc_num"}),
-                         left_on="metacell", right_on="mc_num", how="left", validate="m:1").set_index("index")
-    adata_without_nan = adata[~ adata.obs["broad_cell_type"].isna(), :]
-
-    scvi.data.setup_anndata(adata, layer="counts", batch_key=TREATMENT_ARM)
-    model = scvi.model.SCVI(adata, n_layers=n_layers, n_latent=n_latent, dropout_rate=dropout_rate, n_hidden=n_hidden)
-    model.train(max_epochs=epochs)
-    adata.obsm["X_scVI"] = model.get_latent_representation()
-
-    global cur_adata_with_embedding
-    cur_adata_with_embedding = adata.copy()
-
-    global cur_model
-    cur_model = model
+    adata_with_scvi_emb.obs = pd.merge(
+        left=adata_with_scvi_emb.obs.astype({"metacell": "str"}).reset_index(),
+        right=adata_with_scanpy.obs[["cell_type", "broad_cell_type"]].reset_index().rename(
+            columns={"index": "mc_num"}),
+        left_on="metacell", right_on="mc_num", how="left", validate="m:1").set_index("index")
+    adata_with_scvi_emb = adata_with_scvi_emb[~ adata_with_scvi_emb.obs["broad_cell_type"].isna(), :]
 
     if args.calc_and_save_umap_of_every_model:
         logging.info(f"computing umap for trail {trail_results_path}")
@@ -116,7 +103,14 @@ def evaluate_scvi_on_raw_data(trail):
         sc.tl.umap(adata, min_dist=0.3)
         sc.pl.umap(adata, color=[TREATMENT_ARM, "cell_type"], save="_with_annotation_on_scvi_embedding")
 
-    return silhouette_score(adata_without_nan.obsm["X_scVI"], labels=list(adata_without_nan.obs["broad_cell_type"]))
+    global cur_adata_with_embedding
+    cur_adata_with_embedding = adata_with_scvi_emb.copy()
+
+    global cur_model
+    cur_model = model
+
+    return silhouette_score(adata_with_scvi_emb.obsm["X_scVI"],
+                            labels=list(adata_with_scvi_emb.obs["broad_cell_type"]))
 
 
 def update_best_model_callback(study, trial):

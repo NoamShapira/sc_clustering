@@ -83,10 +83,11 @@ st.write(compute_metrics(final_adata))
 if st.sidebar.button("save final result to file"):
     final_adata.write(Path(experiment_results_dir_path, f"final_adata_{get_now_timestemp_as_string()}.h5ad"))
 
-if st.sidebar.button("Export for anotation"):
-    export_adata_to_anotation(annotate_col_name=clustering_method_name,
-                              compare_col_name=MetaCellResultsColumnsNames().meta_cell,
-                              num_marker_genes=5,
-                              path_to_anotation_dir=config.ANNOTATION_DIR.joinpath(
-                                  experiment_results_dir_path.parts[-1])
-                              )
+# TODO add eport to csv if needed
+# if st.sidebar.button("Export for anotation"):
+#     export_adata_to_anotation(annotate_col_name=clustering_method_name,
+#                               compare_col_name=MetaCellResultsColumnsNames().meta_cell,
+#                               num_marker_genes=5,
+#                               path_to_anotation_dir=config.ANNOTATION_DIR.joinpath(
+#                                   experiment_results_dir_path.parts[-1])
+#                               )
