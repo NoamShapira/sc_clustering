@@ -8,18 +8,18 @@ from clustering.meta_cell_csv import MetaCellResultsColumnsNames
 from clustering_streamlit_funcs import compute_metrics, load_data, plot_raw_data, \
     drop_bad_genes, normalize_and_choose_genes, compute_pca, compute_neighborhood_graph_cache, \
     computer_clusters_cache_and_load_reference
-from data.serano_data_loader_factory import SeranoDataLoaderDescription
+from data.amp_batch_data_loader_factory import PlatesLoaderDescription
 from utils import get_now_timestemp_as_string
 
-DEFAULT_SERANO_DATA_LOADING_DESCRIPTION :SeranoDataLoaderDescription = SeranoDataLoaderDescription.ARMS_1_2_3_FROM_NOAMSH
+DEFAULT_DATA_LOADING_DESCRIPTION :PlatesLoaderDescription = PlatesLoaderDescription.ARMS_1_2_3_FROM_NOAMSH
 
 if config.DEBUG_MODE:
     st.write("running in debug mode")
 st.title("Data Loading")
-all_known_descriptions = [desc.value for desc in SeranoDataLoaderDescription]
+all_known_descriptions = [desc.value for desc in PlatesLoaderDescription]
 chosen_loading_description = st.selectbox("select data loading description", all_known_descriptions,
-                                          index=next(i for i, e in enumerate(SeranoDataLoaderDescription) if
-                                                     e == DEFAULT_SERANO_DATA_LOADING_DESCRIPTION)
+                                          index=next(i for i, e in enumerate(PlatesLoaderDescription) if
+                                                     e == DEFAULT_DATA_LOADING_DESCRIPTION)
                                           )
 raw_adata, experiment_results_dir_path = load_data(chosen_loading_description)
 

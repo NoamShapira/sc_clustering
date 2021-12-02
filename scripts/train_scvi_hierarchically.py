@@ -78,6 +78,7 @@ logging.info("spliting adata to major clusters")
 adatas_of_major_cluster = split_to_major_cluster(adata_with_scvi_emb, emb_col_name=emb_col_name,
                                                  clustering_model_name=args.clustering_method,
                                                  num_clusters=args.num_clusters_to_split_to)
+adata_with_scvi_emb.write(source_adata_path)
 
 for i, adata_of_cluster in enumerate(adatas_of_major_cluster):
     split_results_dir_path = Path(args.save_results_to, f"cluster_{i}")

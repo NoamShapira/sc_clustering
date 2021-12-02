@@ -13,10 +13,9 @@ import pandas as pd
 import scanpy as sc
 from sklearn.metrics import silhouette_score
 
-from embedding.scvi_pipe import train_scvi_on_adata
-
 sys.path.append('/home/labs/amit/noamsh/repos/sc_clustering')
 
+from embedding.scvi_pipe import train_scvi_on_adata
 import config
 from data.meta_data_columns_names import TREATMENT_ARM
 from utils import get_now_timestemp_as_string

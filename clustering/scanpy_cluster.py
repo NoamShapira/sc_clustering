@@ -5,8 +5,8 @@ import anndata as ad
 import scanpy as sc
 
 import config
-from data.serano_data_loader_factory import SeranoDataLoaderFactory, SeranoDataLoaderDescription
-from utils import get_now_timestemp_as_string
+from data.amp_batch_data_loader_factory import PlatesDataLoaderFactory, PlatesLoaderDescription
+from utils import get_now_timestemp_as_string, create_experiment_dir_and_return_path
 
 
 def transform_pca_adata(adata: ad.AnnData, pca_svd_solver=config.TL_PCA_SVD_SOLVER, pca_n_comps=config.TL_PCA_N_COMPS):
@@ -96,7 +96,9 @@ def pp_choose_genes_and_normelize(adata, filter_cells_only_during_pp: bool = Fal
 
 
 def run_full_clustering_pipe_and_create_results_dir():
-    adata, experiment_results_dir_path = SeranoDataLoaderFactory.create_serano_dataloader(
-        SeranoDataLoaderDescription.ARM_1_FROM_WEINER).load_data_to_anndata_and_save_to_dir()
+    adata = PlatesDataLoaderFactory.create_amp_batch_dataloader(
+        PlatesLoaderDescription.ARM_1_FROM_WEINER).load_data_to_anndata()
+    experiment_results_dir_path = create_experiment_dir_and_return_path(experiment_name="simple_clustering")
+    adata.write(Path(experiment_results_dir_path, "loaded_adata.h5ad"))
     adata = run_full_pipe_from_config(adata, filter_cells_only_during_pp=True)
     adata.write(Path(experiment_results_dir_path, f"final_adata_{get_now_timestemp_as_string()}.h5ad"))

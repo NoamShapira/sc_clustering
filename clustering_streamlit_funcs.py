@@ -13,7 +13,9 @@ from sklearn import metrics
 from clustering import scanpy_cluster
 from clustering.meta_cell_csv import load_meta_cell_and_merge_to_adata
 from data import preprocces
-from data.serano_data_loader_factory import SeranoDataLoaderFactory, SeranoDataLoaderDescription
+from data.amp_batch_data_loader_factory import PlatesDataLoaderFactory, PlatesLoaderDescription
+from data.data_loaders import AmpBatchDataLoader
+from utils import create_experiment_dir_and_return_path
 
 
 def scatter_n_genes_and_n_mt_genes_per_cell(adata, ax_1, ax_2):
@@ -30,16 +32,18 @@ def plot_raw_data(adata):
 
 # data loading
 @st.cache(allow_output_mutation=True)
-def load_data(data_loading_description: Union[SeranoDataLoaderDescription, str]) -> Tuple[an.AnnData, Path]:
+def load_data(data_loading_description: Union[PlatesLoaderDescription, str]) -> Tuple[an.AnnData, Path]:
     if isinstance(data_loading_description, str):
         try:
             data_loading_description = next(
-                serano_data_loading_desc for serano_data_loading_desc in SeranoDataLoaderDescription if
-                serano_data_loading_desc.value == data_loading_description)
+                serono_data_loading_desc for serono_data_loading_desc in PlatesLoaderDescription if
+                serono_data_loading_desc.value == data_loading_description)
         except StopIteration:
-            raise Exception("Tried to load with unknown SeranoDataLoaderDescription")
-    adata, experiment_results_dir_path = SeranoDataLoaderFactory.create_serano_dataloader(
-        data_loading_description).load_data_to_anndata_and_save_to_dir()
+            raise Exception(f"Tried to load with unknown {AmpBatchDataLoader.__name__}")
+    adata = PlatesDataLoaderFactory.create_amp_batch_dataloader(
+        data_loading_description).load_data_to_anndata()
+    experiment_results_dir_path = create_experiment_dir_and_return_path(experiment_name="simple_clustering")
+    adata.write(Path(experiment_results_dir_path, "loaded_adata.h5ad"))
     scanpy_cluster.pp_rename_vars_add_mt_metrics(adata)
     return adata, experiment_results_dir_path
 

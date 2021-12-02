@@ -17,7 +17,8 @@ def get_name_of_last_experiment() -> str:
     return all_experiment_names[np.argmax(all_experimnt_times)]
 
 
-def get_last_result_from_experiment(experiment_name: str, experiment_results_dir: Path = config.RESULTS_DIR) -> ad.AnnData:
+def get_last_result_from_experiment(experiment_name: str,
+                                    experiment_results_dir: Path = config.RESULTS_DIR) -> ad.AnnData:
     if experiment_name == "last":
         experiment_name = get_name_of_last_experiment()
 
@@ -28,7 +29,7 @@ def get_last_result_from_experiment(experiment_name: str, experiment_results_dir
     return ad.read(all_results_paths[np.argmax(all_results_times)])
 
 
-def get_raw_data_from_experiment(experiment_name: str,  experiment_results_dir: Path = config.RESULTS_DIR) -> ad.AnnData:
+def get_raw_data_from_experiment(experiment_name: str, experiment_results_dir: Path = config.RESULTS_DIR) -> ad.AnnData:
     if experiment_name == "last":
         experiment_name = get_name_of_last_experiment()
 

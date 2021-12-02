@@ -8,12 +8,12 @@ import config
 from clustering.meta_cell_csv import run_full_pipeline_and_load_meta_cell, MetaCellResultsColumnsNames
 from clustering.post_procces_clusters_by_mice import compute_confusion_matrix
 from config import CLUSTERING_METHOD
-from data.serano_data_loader_factory import SeranoDataLoaderDescription
+from data.amp_batch_data_loader_factory import PlatesLoaderDescription
 
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def full_pipeline_and_load_meta_cell_cached(
-        data_loader_desc: SeranoDataLoaderDescription = SeranoDataLoaderDescription.ARMS_1_2_3_FROM_NOAMSH,
+        data_loader_desc: PlatesLoaderDescription = PlatesLoaderDescription.ARMS_1_2_3_FROM_NOAMSH,
         path_to_meta_cell_results=config.META_CELL_PATH):
     return run_full_pipeline_and_load_meta_cell(data_loader_desc, path_to_meta_cell_results)
 

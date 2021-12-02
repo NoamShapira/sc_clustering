@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import anndata as ad
 import pandas as pd
 
 from clustering.scanpy_cluster import run_full_pipe_from_config
-from data.serano_data_loader_factory import SeranoDataLoaderFactory, SeranoDataLoaderDescription
+from data.amp_batch_data_loader_factory import PlatesDataLoaderFactory, PlatesLoaderDescription
 
 
 class MetaCellResultsColumnsNames(NamedTuple):
@@ -27,11 +27,19 @@ class MetaCellResults:
         return self.df.index
 
 
-def load_meta_cell_and_merge_to_adata(adata: ad.AnnData, path_to_meta_cell_results: Path) -> ad.AnnData:
-    mc_prediction = pd.read_csv(path_to_meta_cell_results)
-    mc_prediction = mc_prediction.set_index("Unnamed: 0", drop=True)
+def calculate_metacells(adata) -> MetaCellResults:
+    "should return a MetaCellResults (dataframe), containg predictions for all cells in the adata"
+    raise NotImplementedError("Not inmplemented in this repo,"
+                              " while writing this metacells repo was not implemented yet in python")
 
-    mc_results_prediction = MetaCellResults(mc_prediction)
+
+def load_meta_cell_and_merge_to_adata(adata: ad.AnnData, path_to_meta_cell_results: Optional[Path]) -> ad.AnnData:
+    if path_to_meta_cell_results is None:
+        mc_results_prediction = calculate_metacells(adata)
+    else:
+        mc_prediction = pd.read_csv(path_to_meta_cell_results)
+        mc_prediction = mc_prediction.set_index("Unnamed: 0", drop=True)
+        mc_results_prediction = MetaCellResults(mc_prediction)
 
     ind_of_adata_in_mc = [obs_name in mc_results_prediction.obs_names for obs_name in adata.obs_names]
     combined_adata = adata[ind_of_adata_in_mc, :]
@@ -43,8 +51,8 @@ def load_meta_cell_and_merge_to_adata(adata: ad.AnnData, path_to_meta_cell_resul
     return combined_adata
 
 
-def run_full_pipeline_and_load_meta_cell(data_loader_desc: SeranoDataLoaderDescription,
-                                         path_to_meta_cell_results: Path) -> ad.AnnData:
-    raw_adata = SeranoDataLoaderFactory.create_serano_dataloader(data_loader_desc).load_data_to_anndata()
+def run_full_pipeline_and_load_meta_cell(data_loader_desc: PlatesLoaderDescription,
+                                         path_to_meta_cell_results: Optional[Path]) -> ad.AnnData:
+    raw_adata = PlatesDataLoaderFactory.create_amp_batch_dataloader(data_loader_desc).load_data_to_anndata()
     clustered_adata = run_full_pipe_from_config(raw_adata.copy(), filter_cells_only_during_pp=False)
     return load_meta_cell_and_merge_to_adata(clustered_adata, path_to_meta_cell_results)
