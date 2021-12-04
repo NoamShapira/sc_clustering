@@ -13,10 +13,13 @@ from clustering.split_adata_to_major_clusters import split_to_major_cluster
 import config
 from data.meta_data_columns_names import TREATMENT_ARM
 from embedding.scvi_pipe import train_scvi_on_adata
+from embedding.embedding_config import DEFAULT_EMB_COL_NAME
 from utils import get_now_timestemp_as_string
 
+# this script assumes adata with raw count
+# It will normalize the counts and choose most variable gene (according to arguments)
+# It will not drop bad cells or bad genes (other that the highly variable genes)
 asaf_raw_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "cells.h5ad")
-asaf_labeled_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "scanpy_metacells.h5ad")
 
 experiment_name = f"hierarchical_scvi_{get_now_timestemp_as_string()}"
 experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
@@ -25,7 +28,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--test_mod', type=bool, default=False)
 
 parser.add_argument("--load_raw_adata_from", type=str, default=str(asaf_raw_adata_path))
-parser.add_argument("--load_labeled_adata_from", type=str, default=str(asaf_labeled_adata_path))
 parser.add_argument("--save_results_to", type=str, default=str(experiment_results_dir_path))
 
 # spliting params
@@ -39,7 +41,7 @@ parser.add_argument("--pp_n_top_variable_genes", type=int, default=3000)
 
 # scvi params
 parser.add_argument("--n_layers", type=int, default=1)
-parser.add_argument("--n_latent", type=int, default=30)
+parser.add_argument("--n_latent", type=int, default=20)
 parser.add_argument("--dropout_rate", type=float, default=0.5)
 parser.add_argument("--n_hidden", type=int, default=64)
 
@@ -53,15 +55,12 @@ if os.path.isdir(args.save_results_to):
                      f" expect non existing dir and the script will create it")
 os.mkdir(args.save_results_to)
 shutil.copyfile(args.load_raw_adata_from, source_adata_path)
-shutil.copyfile(args.load_labeled_adata_from, source_labeled_adata_path)
 
 adata = ad.read_h5ad(source_adata_path)
-# adata_with_labels = ad.read_h5ad(source_labeled_adata_path)
 if args.test_mod:
     adata = adata[0:300, :]
-    # adata_with_labels = adata_with_labels[adata.obs, :]
 
-emb_col_name = "X_scVI"
+emb_col_name = DEFAULT_EMB_COL_NAME
 
 if args.split_and_continue_from_dir == "":
     adata_with_scvi_emb = train_scvi_on_adata(adata, args_for_scvi_model=args, results_dir=args.save_results_to,

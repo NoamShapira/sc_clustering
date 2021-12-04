@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -10,10 +11,10 @@ import pytorch_lightning.loggers as pl_loggers
 import scanpy as sc
 import scvi
 from sklearn.metrics import silhouette_score
-import argparse
 
 sys.path.append('/home/labs/amit/noamsh/repos/sc_clustering')
 
+from embedding.embedding_config import DEFAULT_EMB_COL_NAME
 import config
 from utils import get_now_timestemp_as_string
 
@@ -23,10 +24,10 @@ parser.add_argument("--metacells_file_path", type=str,
                     default=str(Path(config.RESULTS_DIR, "mc_2021_09_23__09_59_00", "metacells.h5ad")))
 parser.add_argument("--metacells_with_annot_file_path", type=str,
                     default=str(Path(config.RESULTS_DIR, "mc_2021_09_23__09_59_00", "scanpy_metacells.h5ad")))
-parser.add_argument("--normalize_data",type=bool, default=False)
-parser.add_argument("--choose_features_from_mc",type=bool, default=True)
-parser.add_argument("--save_data_and_results",type=bool, default=True)
-parser.add_argument("--n_trials",type=int, default=50)
+parser.add_argument("--normalize_data", type=bool, default=False)
+parser.add_argument("--choose_features_from_mc", type=bool, default=True)
+parser.add_argument("--save_data_and_results", type=bool, default=True)
+parser.add_argument("--n_trials", type=int, default=50)
 args = parser.parse_args()
 
 experiment_name = f"hp_search_scvi_on_meta_cells_{get_now_timestemp_as_string()}"
@@ -36,6 +37,7 @@ tb_logs_path = Path(experiment_results_dir_path, "tb_logs")
 os.mkdir(tb_logs_path)
 
 
+# TODO - try to use the same optuna script as "on_raw_data"
 def objective(trail):
     n_hidden = trail.suggest_categorical("n_hidden", [32, 64, 128, 256])
     n_layers = trail.suggest_int("n_layers", 1, 2)
@@ -75,20 +77,20 @@ def objective(trail):
     model = scvi.model.SCVI(adata, n_hidden=n_hidden, dropout_rate=dropout_rate, n_layers=n_layers, n_latent=n_latent)
 
     tb_logger = pl_loggers.TensorBoardLogger(str(Path(trail_results_path, "logs/")))
-    model.train(max_epochs=epochs, logger=tb_logger)
-    adata.obsm["X_scVI"] = model.get_latent_representation()
+    model.train(max_epochs=epochs, trainer_kwargs={"logger": tb_logger})
+    adata.obsm[DEFAULT_EMB_COL_NAME] = model.get_latent_representation()
 
     if args.save_data_and_results:
-        sc.pp.neighbors(adata, use_rep="X_scVI", n_neighbors=n_neighbors)
+        sc.pp.neighbors(adata, use_rep=DEFAULT_EMB_COL_NAME, n_neighbors=n_neighbors)
         sc.tl.umap(adata, min_dist=0.2)
         sc.pl.umap(adata, color=["cell_type", "leiden", "broad_cell_type"],
                    save="_annotation_on_graph_with_scvi_embedding")
         adata.write(Path(trail_results_path, "adata_with_annot_and_scvi.h5ad"))
 
-    return silhouette_score(adata.obsm["X_scVI"], labels=list(adata.obs["broad_cell_type"]))
+    return silhouette_score(adata.obsm[DEFAULT_EMB_COL_NAME], labels=list(adata.obs["broad_cell_type"]))
 
 
-study = optuna.create_study(direction="maximize") # # sampler=optuna.samplers.GridSampler(search_space)
+study = optuna.create_study(direction="maximize")  # # sampler=optuna.samplers.GridSampler(search_space)
 study.optimize(objective, n_trials=args.n_trials)
 
 study_file_path = Path(experiment_results_dir_path, "joblib_study.pkl")

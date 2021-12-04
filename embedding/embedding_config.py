@@ -1,0 +1,1 @@
+DEFAULT_EMB_COL_NAME = "X_scVI"

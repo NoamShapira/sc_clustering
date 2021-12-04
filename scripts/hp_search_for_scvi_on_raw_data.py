@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import shutil
 import sys
 from argparse import Namespace
 from pathlib import Path
@@ -9,18 +8,26 @@ from pathlib import Path
 import anndata as ad
 import joblib
 import optuna
-import pandas as pd
 import scanpy as sc
 from sklearn.metrics import silhouette_score
 
 sys.path.append('/home/labs/amit/noamsh/repos/sc_clustering')
 
-from embedding.scvi_pipe import train_scvi_on_adata
+from clustering.merge_labels_to_adata import merge_labels_to_adata
+from embedding.scvi_pipe import train_scvi_on_adata, DEFAULT_EMB_COL_NAME
 import config
 from data.meta_data_columns_names import TREATMENT_ARM
 from utils import get_now_timestemp_as_string
 
+emb_col_name = DEFAULT_EMB_COL_NAME
+
+# input adata, this adata to train scvi on
+#   assumed columns : 'Treatment Arm' as batch, 'metacell' - column of labels
 asaf_raw_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "cells.h5ad")
+
+# input adata with labels per meta_cell- this script try to optimize embedding to fit labels.
+#   assumed columns in labeled_adata.obs: ["cell_type", "broad_cell_type"]
+#   and index as metacell
 asaf_labeled_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "scanpy_metacells.h5ad")
 
 experiment_name = f"hp_search_scvi_on_raw_gene_counts_{get_now_timestemp_as_string()}"
@@ -44,16 +51,19 @@ new_adata_path = Path(experiment_results_dir_path, "cells.h5ad")
 new_labeled_adata_path = Path(experiment_results_dir_path, "scanpy_metacells.h5ad")
 
 os.mkdir(experiment_results_dir_path)
-shutil.copyfile(args.load_raw_adata_from, new_adata_path)
-shutil.copyfile(args.load_labeled_adata_from, new_labeled_adata_path)
+source_adata = ad.read_h5ad(args.load_raw_adata_from)
+adata_with_labels = ad.read_h5ad(args.load_labeled_adata_from)
+merge_labels_to_adata(source_adata, labels_df=adata_with_labels.obs, labels_col_names=["cell_type", "broad_cell_type"],
+                      col_in_adata_to_merge_by="metacell", cols_in_labels_df_to_merge_by="index",
+                      cols_to_validate_not_empty=["broad_cell_type"])
+source_adata.write(new_adata_path)
+
 sc.settings.figdir = experiment_results_dir_path
 
 adata_with_best_embedding = None
 cur_adata_with_embedding = None
 cur_model = None
 best_model = None
-
-emb_col_name = "X_scVI"
 
 
 def evaluate_scvi_on_raw_data(trail):
@@ -88,17 +98,9 @@ def evaluate_scvi_on_raw_data(trail):
                                                      batch_col_name=TREATMENT_ARM, max_epochs=epochs,
                                                      n_variable_genes=n_genes)
 
-    adata_with_scanpy = ad.read_h5ad(new_labeled_adata_path)
-    adata_with_scvi_emb.obs = pd.merge(
-        left=adata_with_scvi_emb.obs.astype({"metacell": "str"}).reset_index(),
-        right=adata_with_scanpy.obs[["cell_type", "broad_cell_type"]].reset_index().rename(
-            columns={"index": "mc_num"}),
-        left_on="metacell", right_on="mc_num", how="left", validate="m:1").set_index("index")
-    adata_with_scvi_emb = adata_with_scvi_emb[~ adata_with_scvi_emb.obs["broad_cell_type"].isna(), :]
-
     if args.calc_and_save_umap_of_every_model:
         logging.info(f"computing umap for trail {trail_results_path}")
-        sc.pp.neighbors(adata, use_rep="X_scVI")
+        sc.pp.neighbors(adata, use_rep=emb_col_name)
         sc.tl.umap(adata, min_dist=0.3)
         sc.pl.umap(adata, color=[TREATMENT_ARM, "cell_type"], save="_with_annotation_on_scvi_embedding")
 
@@ -108,10 +110,11 @@ def evaluate_scvi_on_raw_data(trail):
     global cur_model
     cur_model = model
 
-    return silhouette_score(adata_with_scvi_emb.obsm["X_scVI"],
+    return silhouette_score(adata_with_scvi_emb.obsm[emb_col_name],
                             labels=list(adata_with_scvi_emb.obs["broad_cell_type"]))
 
 
+## not tested for parallelization - some trials can try to edit the best model simultaneously
 def update_best_model_callback(study, trial):
     global adata_with_best_embedding
     global best_model
@@ -133,7 +136,7 @@ joblib.dump(study, study_file_path)
 logging.info(f"finished saving")
 
 sc.settings.figdir = experiment_results_dir_path
-sc.pp.neighbors(adata_with_best_embedding, use_rep="X_scVI")
+sc.pp.neighbors(adata_with_best_embedding, use_rep=emb_col_name)
 sc.tl.umap(adata_with_best_embedding, min_dist=0.3)
 sc.pl.umap(adata_with_best_embedding, color=[TREATMENT_ARM, "cell_type"],
            save="_best_with_annotation_on_scvi_embedding")

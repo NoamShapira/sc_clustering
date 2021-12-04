@@ -23,6 +23,7 @@ class AnnDataLoader(ABC):
 
 DEBUG_MODE = False
 DEBUG_N_BATCHES = 10
+BAD_COLUMNS_NAMES = ['Mouse']
 
 class AmpBatchDataLoader(AnnDataLoader):
     def __init__(self, experiments_data_dir: Path, meta_data_path: Path,
@@ -66,8 +67,7 @@ class AmpBatchDataLoader(AnnDataLoader):
         logging.info("merging to single adata")
         adata = ad.concat(adatas, merge="same")
 
-        bad_columns = ['Mouse'] #, "Experimental Batch", 'Libraries date','Frozen']
         adata.obs = adata.obs.astype(str)
-        logging.info(f"dropping - {str(bad_columns)} columns, some bug with that columns")
-        adata.obs.drop(bad_columns, axis='columns', inplace=True)
+        logging.info(f"dropping - {str(BAD_COLUMNS_NAMES)} columns, some bug with that columns")
+        adata.obs.drop(BAD_COLUMNS_NAMES, axis='columns', inplace=True)
         return adata
