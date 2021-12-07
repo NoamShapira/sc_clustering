@@ -35,11 +35,15 @@ default_experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
 
 parser = argparse.ArgumentParser(prog='scvi_hp_search_on_raw_data',
                                  description="creating an optuna hyper parameter search")
-
+# data loading args
 parser.add_argument("--load_raw_adata_from", type=str, default=str(asaf_raw_adata_path))
-parser.add_argument("--load_labeled_adata_from", type=str, default=str(asaf_labeled_adata_path))
+parser.add_argument("--load_labeled_adata_from", type=str, default=str(asaf_labeled_adata_path),
+                    help="pass to adata with eta cells lables, if provided will merge the lebels to the raw adata,"
+                         " if empty (''), assums the label data in raw adata")
+parser.add_argument("--labels_column_name", type=str, default="broad_cell_type")
 parser.add_argument("--results_dir", type=str, default=str(default_experiment_results_dir_path))
 
+# optuna args
 parser.add_argument('--n_trials', type=int, default=50)
 parser.add_argument('--calc_and_save_umap_of_every_model', type=bool, default=False)
 parser.add_argument('--test_mod', type=bool, default=False)
@@ -48,14 +52,19 @@ args = parser.parse_args()
 
 experiment_results_dir_path = args.results_dir
 new_adata_path = Path(experiment_results_dir_path, "cells.h5ad")
-new_labeled_adata_path = Path(experiment_results_dir_path, "scanpy_metacells.h5ad")
 
 os.mkdir(experiment_results_dir_path)
 source_adata = ad.read_h5ad(args.load_raw_adata_from)
-adata_with_labels = ad.read_h5ad(args.load_labeled_adata_from)
-merge_labels_to_adata(source_adata, labels_df=adata_with_labels.obs, labels_col_names=["cell_type", "broad_cell_type"],
-                      col_in_adata_to_merge_by="metacell", cols_in_labels_df_to_merge_by="index",
-                      cols_to_validate_not_empty=["broad_cell_type"])
+if args.load_labeled_adata_from != "":
+    # labeled data assumes to be in source_adata
+    adata_with_labels = ad.read_h5ad(args.load_labeled_adata_from)
+    merge_labels_to_adata(source_adata, labels_df=adata_with_labels.obs,
+                          labels_col_names=["cell_type", args.labels_column_name],
+                          col_in_adata_to_merge_by="metacell", cols_in_labels_df_to_merge_by="index",
+                          cols_to_validate_not_empty=[args.labels_column_name])
+else:
+    assert args.labels_column_name in source_adata.obs, \
+        "did not passed adata with metacells labels, but no labels found in source adata"
 source_adata.write(new_adata_path)
 
 sc.settings.figdir = experiment_results_dir_path
@@ -111,7 +120,7 @@ def evaluate_scvi_on_raw_data(trail):
     cur_model = model
 
     return silhouette_score(adata_with_scvi_emb.obsm[emb_col_name],
-                            labels=list(adata_with_scvi_emb.obs["broad_cell_type"]))
+                            labels=list(adata_with_scvi_emb.obs[args.labels_column_name]))
 
 
 ## not tested for parallelization - some trials can try to edit the best model simultaneously
