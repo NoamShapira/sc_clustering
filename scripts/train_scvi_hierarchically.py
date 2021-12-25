@@ -19,7 +19,7 @@ from utils import get_now_timestemp_as_string
 # this script assumes adata with raw count
 # It will normalize the counts and choose most variable gene (according to arguments)
 # It will not drop bad cells or bad genes (other that the highly variable genes)
-asaf_raw_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "cells.h5ad")
+asaf_raw_adata_path = Path(config.ASAF_META_CELL_ATLAS_DIR_PATH, "cells.h5ad") # /home/labs/amit/kenx/Serono/S15/cells.h5ad
 
 experiment_name = f"hierarchical_scvi_{get_now_timestemp_as_string()}"
 experiment_results_dir_path = Path(config.RESULTS_DIR, experiment_name)
@@ -37,13 +37,13 @@ parser.add_argument("--min_percentage_of_cluster_to_compute_new_embedding", type
 parser.add_argument("--split_and_continue_from_dir", type=str, default="")
 
 # preprocessing
-parser.add_argument("--pp_n_top_variable_genes", type=int, default=3000)
+parser.add_argument("--pp_n_top_variable_genes", type=int, default=8000)
 
 # scvi params
 parser.add_argument("--n_layers", type=int, default=1)
-parser.add_argument("--n_latent", type=int, default=20)
+parser.add_argument("--n_latent", type=int, default=16)
 parser.add_argument("--dropout_rate", type=float, default=0.5)
-parser.add_argument("--n_hidden", type=int, default=64)
+parser.add_argument("--n_hidden", type=int, default=128)
 
 args = parser.parse_args()
 
@@ -77,8 +77,8 @@ logging.info("spliting adata to major clusters")
 adatas_of_major_cluster = split_to_major_cluster(adata_with_scvi_emb, emb_col_name=emb_col_name,
                                                  clustering_model_name=args.clustering_method,
                                                  num_clusters=args.num_clusters_to_split_to)
-adata_with_scvi_emb.write(source_adata_path)
 
+logging.info("training scvi for the clusters")
 for i, adata_of_cluster in enumerate(adatas_of_major_cluster):
     split_results_dir_path = Path(args.save_results_to, f"cluster_{i}")
     os.mkdir(split_results_dir_path)
@@ -94,4 +94,4 @@ for i, adata_of_cluster in enumerate(adatas_of_major_cluster):
         logging.info(logging_msg)
         print(logging_msg)
 
-print("finished script !!")
+logging.info("finished script !!")
